@@ -1,0 +1,383 @@
+{
+  "info": {
+    "_postman_id": "tasker-api-v1-collection",
+    "name": "Tasker API v1",
+    "description": "Postman Collection for Tasker API (ClickUp-like Task Management System)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Public / Auth",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Accept", "value": "application/json", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"},
+              {"key": "Accept-Language", "value": "en", "type": "text"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jane Doe\",\n  \"email\": \"jane@tasker.test\",\n  \"password\": \"Password123!\",\n  \"password_confirmation\": \"Password123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/public/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["public", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.token && jsonData.data.token.access_token) {",
+                  "    pm.collectionVariables.set('token', jsonData.data.token.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Accept", "value": "application/json", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"jane@tasker.test\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/public/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["public", "auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Protected / Auth & Profile",
+      "item": [
+        {
+          "name": "Logout User",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/auth/logout", "host": ["{{base_url}}"], "path": ["auth", "logout"]}
+          }
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/profile", "host": ["{{base_url}}"], "path": ["profile"]}
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [
+              {"key": "Accept", "value": "application/json", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jane Updated\"\n}"
+            },
+            "url": {"raw": "{{base_url}}/profile", "host": ["{{base_url}}"], "path": ["profile"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Protected / Projects",
+      "item": [
+        {
+          "name": "List Projects",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/projects", "host": ["{{base_url}}"], "path": ["projects"]}
+          }
+        },
+        {
+          "name": "Create Project",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [
+              {"key": "Accept", "value": "application/json", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mobile App v1\",\n  \"description\": \"Core client mobile development\"\n}"
+            },
+            "url": {"raw": "{{base_url}}/projects", "host": ["{{base_url}}"], "path": ["projects"]}
+          }
+        },
+        {
+          "name": "Show Project",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/projects/1", "host": ["{{base_url}}"], "path": ["projects", "1"]}
+          }
+        },
+        {
+          "name": "Update Project",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [
+              {"key": "Accept", "value": "application/json", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mobile App v1.5\"\n}"
+            },
+            "url": {"raw": "{{base_url}}/projects/1", "host": ["{{base_url}}"], "path": ["projects", "1"]}
+          }
+        },
+        {
+          "name": "Delete Project",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "DELETE",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/projects/1", "host": ["{{base_url}}"], "path": ["projects", "1"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Protected / Workspaces",
+      "item": [
+        {
+          "name": "List Workspaces",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/workspaces", "host": ["{{base_url}}"], "path": ["workspaces"]}
+          }
+        },
+        {
+          "name": "Create Workspace",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [
+              {"key": "Accept", "value": "application/json", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": 1,\n  \"name\": \"Engineering Workspace\",\n  \"description\": \"API, Backend and DB work\",\n  \"users\": [\n    {\"user_id\": 2, \"role\": \"admin\"},\n    {\"user_id\": 3, \"role\": \"editor\"}\n  ]\n}"
+            },
+            "url": {"raw": "{{base_url}}/workspaces", "host": ["{{base_url}}"], "path": ["workspaces"]}
+          }
+        },
+        {
+          "name": "Show Workspace",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/workspaces/1", "host": ["{{base_url}}"], "path": ["workspaces", "1"]}
+          }
+        },
+        {
+          "name": "Update Workspace",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [
+              {"key": "Accept", "value": "application/json", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Engineering & QA Workspace\"\n}"
+            },
+            "url": {"raw": "{{base_url}}/workspaces/1", "host": ["{{base_url}}"], "path": ["workspaces", "1"]}
+          }
+        },
+        {
+          "name": "Delete Workspace",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "DELETE",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/workspaces/1", "host": ["{{base_url}}"], "path": ["workspaces", "1"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Protected / Task Statuses",
+      "item": [
+        {
+          "name": "List Task Statuses",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/task-statuses", "host": ["{{base_url}}"], "path": ["task-statuses"]}
+          }
+        },
+        {
+          "name": "Create Task Status",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [
+              {"key": "Accept", "value": "application/json", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"In Progress\",\n  \"stage\": \"working\",\n  \"color\": \"#3b82f6\",\n  \"order\": 2\n}"
+            },
+            "url": {"raw": "{{base_url}}/task-statuses", "host": ["{{base_url}}"], "path": ["task-statuses"]}
+          }
+        },
+        {
+          "name": "Show Task Status",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/task-statuses/1", "host": ["{{base_url}}"], "path": ["task-statuses", "1"]}
+          }
+        },
+        {
+          "name": "Update Task Status",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [
+              {"key": "Accept", "value": "application/json", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Done\",\n  \"stage\": \"completed\",\n  \"color\": \"#22c55e\"\n}"
+            },
+            "url": {"raw": "{{base_url}}/task-statuses/1", "host": ["{{base_url}}"], "path": ["task-statuses", "1"]}
+          }
+        },
+        {
+          "name": "Delete Task Status",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "DELETE",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/task-statuses/1", "host": ["{{base_url}}"], "path": ["task-statuses", "1"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Protected / Tasks",
+      "item": [
+        {
+          "name": "List Tasks",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {
+              "raw": "{{base_url}}/tasks?workspace_id=1&priority=High",
+              "host": ["{{base_url}}"],
+              "path": ["tasks"],
+              "query": [
+                {"key": "workspace_id", "value": "1"},
+                {"key": "priority", "value": "High"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Task (Auto Position)",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [
+              {"key": "Accept", "value": "application/json", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": 1,\n  \"workspace_id\": 1,\n  \"status_id\": 1,\n  \"title\": \"Implement User Permissions\",\n  \"description\": \"Configure roles and permissions for workspace users\",\n  \"priority\": \"High\",\n  \"start_date\": \"2026-09-18 10:00:00\",\n  \"due_date\": \"2026-09-22 18:00:00\"\n}"
+            },
+            "url": {"raw": "{{base_url}}/tasks", "host": ["{{base_url}}"], "path": ["tasks"]}
+          }
+        },
+        {
+          "name": "Show Task",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/tasks/1", "host": ["{{base_url}}"], "path": ["tasks", "1"]}
+          }
+        },
+        {
+          "name": "Update Task (Transition to Completed)",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [
+              {"key": "Accept", "value": "application/json", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status_id\": 3,\n  \"fixed_by\": 1\n}"
+            },
+            "url": {"raw": "{{base_url}}/tasks/1", "host": ["{{base_url}}"], "path": ["tasks", "1"]}
+          }
+        },
+        {
+          "name": "Delete Task (Soft Delete)",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "DELETE",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/tasks/1", "host": ["{{base_url}}"], "path": ["tasks", "1"]}
+          }
+        }
+      ]
+    }
+  ]
+}

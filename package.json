@@ -6,11 +6,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:api": "node scripts/test-api.mjs local",
+    "test:api:remote": "node scripts/test-api.mjs remote"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
     "axios": "^1.20.0",
+    "lucide-react": "^1.47.0",
     "next": "16.3.5",
     "react": "19.2.8",
     "react-dom": "19.2.8"

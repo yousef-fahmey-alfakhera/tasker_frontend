@@ -1,69 +1,143 @@
-import Image from "next/image";
+'use client';
+
+import React, { useState } from 'react';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { TaskProvider, useTasks } from '@/context/TaskContext';
+import AuthScreen from '@/components/auth/AuthScreen';
+import AppHeader from '@/components/layout/AppHeader';
+import TaskBoardView from '@/components/tasks/TaskBoardView';
+import TaskListView from '@/components/tasks/TaskListView';
+import TaskDialog from '@/components/tasks/TaskDialog';
+import NewProjectModal from '@/components/modals/NewProjectModal';
+import NewWorkspaceModal from '@/components/modals/NewWorkspaceModal';
+import { Task } from '@/types/api';
+import { AlertCircle, Layers, Loader2, RefreshCw } from 'lucide-react';
+
+function TaskerContent() {
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const {
+    error: taskError,
+    isLoadingTasks,
+    isLoadingMeta,
+    refreshAll,
+  } = useTasks();
+
+  const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [initialStatusId, setInitialStatusId] = useState<number | undefined>(undefined);
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false);
+
+  // Loading Splash
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-400 gap-3">
+        <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+          <Layers className="w-6 h-6 animate-pulse" />
+        </div>
+        <div className="flex items-center gap-2 text-xs font-mono">
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+          <span>Initializing Tasker workspace...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Not authenticated
+  if (!isAuthenticated) {
+    return <AuthScreen />;
+  }
+
+  const handleOpenNewTask = (statusId?: number) => {
+    setTaskToEdit(null);
+    setInitialStatusId(statusId);
+    setIsTaskDialogOpen(true);
+  };
+
+  const handleEditTask = (task: Task) => {
+    setTaskToEdit(task);
+    setIsTaskDialogOpen(true);
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-indigo-500 selection:text-white">
+      {/* Header */}
+      <AppHeader
+        viewMode={viewMode}
+        onToggleViewMode={setViewMode}
+        onOpenNewTask={() => handleOpenNewTask()}
+        onOpenNewProject={() => setIsProjectModalOpen(true)}
+        onOpenNewWorkspace={() => setIsWorkspaceModalOpen(true)}
+      />
+
+      {/* Global Error Notice if any */}
+      {taskError && (
+        <div className="mx-6 mt-4 p-3 bg-red-950/40 border border-red-500/30 rounded-xl text-red-200 text-xs flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+            <span>{taskError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => refreshAll()}
+            className="flex items-center gap-1 text-[11px] text-red-300 hover:text-white px-2 py-0.5 rounded bg-red-900/30 hover:bg-red-900/50 transition-colors"
+          >
+            <RefreshCw className="w-3 h-3" />
+            <span>Retry</span>
+          </button>
+        </div>
+      )}
+
+      {/* Loading banner for background task fetches */}
+      {isLoadingTasks && (
+        <div className="h-0.5 w-full bg-slate-900 overflow-hidden">
+          <div className="h-full bg-indigo-500 animate-pulse w-1/3" />
+        </div>
+      )}
+
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col">
+        {viewMode === 'board' ? (
+          <TaskBoardView
+            onEditTask={handleEditTask}
+            onAddTask={handleOpenNewTask}
+          />
+        ) : (
+          <TaskListView
+            onEditTask={handleEditTask}
+            onAddTask={() => handleOpenNewTask()}
+          />
+        )}
+      </main>
+
+      {/* Modals */}
+      <TaskDialog
+        isOpen={isTaskDialogOpen}
+        onClose={() => setIsTaskDialogOpen(false)}
+        taskToEdit={taskToEdit}
+        initialStatusId={initialStatusId}
+      />
+
+      <NewProjectModal
+        isOpen={isProjectModalOpen}
+        onClose={() => setIsProjectModalOpen(false)}
+      />
+
+      <NewWorkspaceModal
+        isOpen={isWorkspaceModalOpen}
+        onClose={() => setIsWorkspaceModalOpen(false)}
+      />
+    </div>
+  );
+}
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <AuthProvider>
+      <TaskProvider>
+        <TaskerContent />
+      </TaskProvider>
+    </AuthProvider>
   );
 }
