@@ -32,6 +32,7 @@ export default function AuthScreen() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const isLocal = activeApiUrl.includes('127.0.0.1') || activeApiUrl.includes('localhost');
+  const isDev = process.env.NODE_ENV === 'development';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,46 +76,52 @@ export default function AuthScreen() {
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-10 right-10 w-80 h-80 bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Top Bar: API Environment Indicator & Switcher */}
-      <div className="w-full max-w-md mb-4 flex items-center justify-between text-xs px-2">
-        <div className="flex items-center gap-2 text-slate-400">
-          <Server className="w-3.5 h-3.5 text-indigo-400" />
-          <span className="font-mono truncate max-w-[200px]" title={activeApiUrl}>
-            {isLocal ? 'Local Backend (8000)' : 'Production Cloud API'}
-          </span>
+      {/* Top Bar: API Environment Indicator & Switcher (Shown in Development Only) */}
+      {isDev && (
+        <div className="w-full max-w-md mb-4 flex items-center justify-between text-xs px-1 sm:px-2">
+          <div className="flex items-center gap-2 text-slate-400">
+            <Server className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <span className="font-mono truncate max-w-[130px] sm:max-w-[200px]" title={activeApiUrl}>
+              {isLocal ? 'Local Backend (8000)' : 'Production Cloud API'}
+            </span>
+          </div>
+          <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-full p-0.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => switchApiUrl(API_URLS.LOCAL)}
+              className={`px-2.5 py-1 rounded-full font-medium transition-all ${
+                isLocal
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Local
+            </button>
+            <button
+              type="button"
+              onClick={() => switchApiUrl(API_URLS.REMOTE)}
+              className={`px-2.5 py-1 rounded-full font-medium transition-all ${
+                !isLocal
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Remote
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-full p-0.5">
-          <button
-            type="button"
-            onClick={() => switchApiUrl(API_URLS.LOCAL)}
-            className={`px-2.5 py-1 rounded-full font-medium transition-all ${
-              isLocal
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Local
-          </button>
-          <button
-            type="button"
-            onClick={() => switchApiUrl(API_URLS.REMOTE)}
-            className={`px-2.5 py-1 rounded-full font-medium transition-all ${
-              !isLocal
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Remote
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* Main Auth Card */}
-      <div className="w-full max-w-md bg-slate-900/90 backdrop-blur-xl border border-slate-800/80 rounded-2xl p-7 shadow-2xl relative z-10">
+      <div className="w-full max-w-md bg-slate-900/90 backdrop-blur-xl border border-slate-800/80 rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-2xl relative z-10">
         {/* Brand Header */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-500 text-white shadow-lg shadow-indigo-500/25 mb-3">
-            <Layers className="w-6 h-6" />
+          <div className="inline-flex items-center justify-center mb-3">
+            <img
+              src="/tasker_logo.jpg"
+              alt="Tasker Logo"
+              className="w-16 h-16 rounded-2xl object-cover shadow-xl shadow-indigo-500/25 border border-indigo-500/30"
+            />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-white flex items-center justify-center gap-1.5">
             Tasker <span className="text-indigo-400 text-xs font-mono uppercase px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20">API v1</span>
@@ -278,20 +285,27 @@ export default function AuthScreen() {
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             <span>Need test credentials?</span>
           </p>
-          <div className="flex gap-2 justify-center">
+          <div className="flex flex-wrap gap-2 justify-center">
             <button
               type="button"
-              onClick={() => fillDemo('jane@tasker.test', 'Password123!')}
-              className="text-[11px] text-indigo-300 hover:text-indigo-200 bg-indigo-950/40 border border-indigo-800/40 px-2.5 py-1 rounded-lg transition-colors"
+              onClick={() => fillDemo('admin@admin.com', '123456789')}
+              className="text-[11px] text-indigo-300 hover:text-indigo-200 bg-indigo-950/60 border border-indigo-800/60 px-2.5 py-1 rounded-lg transition-colors font-medium"
             >
-              Fill Jane (jane@tasker.test)
+              Admin (admin@admin.com)
             </button>
             <button
               type="button"
-              onClick={() => fillDemo('alex@tasker.test', 'Password123!')}
-              className="text-[11px] text-indigo-300 hover:text-indigo-200 bg-indigo-950/40 border border-indigo-800/40 px-2.5 py-1 rounded-lg transition-colors"
+              onClick={() => fillDemo('user@user.com', '123456789')}
+              className="text-[11px] text-indigo-300 hover:text-indigo-200 bg-indigo-950/60 border border-indigo-800/60 px-2.5 py-1 rounded-lg transition-colors font-medium"
             >
-              Fill Alex (alex@tasker.test)
+              User (user@user.com)
+            </button>
+            <button
+              type="button"
+              onClick={() => fillDemo('jane@tasker.test', 'Password123!')}
+              className="text-[11px] text-slate-400 hover:text-slate-200 bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-lg transition-colors"
+            >
+              Remote Jane
             </button>
           </div>
         </div>

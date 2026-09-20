@@ -35,10 +35,46 @@ export const tasksService = {
   },
 
   /**
-   * Create a new task
+   * Create a new task (supports multipart upload when attachments are provided)
    * POST /tasks
    */
   async createTask(payload: CreateTaskPayload): Promise<ApiResponse<Task>> {
+    if (payload.attachments && payload.attachments.length > 0) {
+      const formData = new FormData();
+      formData.append('project_id', String(payload.project_id));
+      formData.append('workspace_id', String(payload.workspace_id));
+      formData.append('status_id', String(payload.status_id));
+      if (payload.task_type_id) {
+        formData.append('task_type_id', String(payload.task_type_id));
+      }
+      formData.append('title', payload.title);
+      if (payload.description) {
+        formData.append('description', payload.description);
+      }
+      if (payload.priority) {
+        formData.append('priority', payload.priority);
+      }
+      if (payload.position !== undefined) {
+        formData.append('position', String(payload.position));
+      }
+      if (payload.start_date) {
+        formData.append('start_date', payload.start_date);
+      }
+      if (payload.due_date) {
+        formData.append('due_date', payload.due_date);
+      }
+      for (const file of payload.attachments) {
+        formData.append('attachments[]', file);
+      }
+
+      const response = await apiClient.post<ApiResponse<Task>>('/tasks', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    }
+
     const response = await apiClient.post<ApiResponse<Task>>('/tasks', payload);
     return response.data;
   },

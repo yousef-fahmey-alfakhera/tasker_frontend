@@ -13,6 +13,8 @@ import {
   ArrowRight,
   AlertCircle,
   Inbox,
+  Sparkles,
+  Paperclip,
 } from 'lucide-react';
 
 interface Props {
@@ -50,6 +52,17 @@ export default function TaskBoardView({ onEditTask, onAddTask }: Props) {
           { id: 3, name: 'Done', stage: 'completed', color: '#22c55e', order: 3 },
         ];
 
+  const columnRefs = React.useRef<Record<number, HTMLDivElement | null>>({});
+  const [activeTabStatusId, setActiveTabStatusId] = React.useState<number | null>(null);
+
+  const scrollToColumn = (statusId: number) => {
+    setActiveTabStatusId(statusId);
+    const el = columnRefs.current[statusId];
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+  };
+
   const handleQuickMove = async (task: Task, newStatusId: number) => {
     try {
       await updateTask(task.id, { status_id: newStatusId });
@@ -59,16 +72,52 @@ export default function TaskBoardView({ onEditTask, onAddTask }: Props) {
   };
 
   return (
-    <div className="flex-1 overflow-x-auto p-6">
-      <div className="flex gap-6 min-w-max items-start">
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Mobile Status Tabs for fast 1-tap switching */}
+      <div className="flex sm:hidden items-center gap-1.5 px-3 pt-3 pb-1 overflow-x-auto no-scrollbar shrink-0 border-b border-slate-800/50 bg-slate-950/40">
         {displayStatuses.map((status) => {
-          const columnTasks = filteredTasks.filter((t) => t.status_id === status.id);
-
+          const count = filteredTasks.filter((t) => t.status_id === status.id).length;
+          const isActive = activeTabStatusId === status.id;
           return (
-            <div
+            <button
               key={status.id}
-              className="w-80 bg-slate-900/60 border border-slate-800/80 rounded-2xl flex flex-col max-h-[calc(100vh-180px)] backdrop-blur-sm"
+              type="button"
+              onClick={() => scrollToColumn(status.id)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-medium shrink-0 flex items-center gap-1.5 transition-all border ${
+                isActive
+                  ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
+                  : 'bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800'
+              }`}
             >
+              <span
+                className="w-2 h-2 rounded-full shrink-0"
+                style={{ backgroundColor: status.color || '#6366f1' }}
+              />
+              <span>{status.name}</span>
+              <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                isActive ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+              }`}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Columns Container */}
+      <div className="flex-1 overflow-x-auto p-3 sm:p-6 snap-x snap-mandatory scroll-smooth">
+        <div className="flex gap-3 sm:gap-6 min-w-max items-start">
+          {displayStatuses.map((status) => {
+            const columnTasks = filteredTasks.filter((t) => t.status_id === status.id);
+
+            return (
+              <div
+                key={status.id}
+                ref={(el) => {
+                  columnRefs.current[status.id] = el;
+                }}
+                className="w-[85vw] max-w-[340px] sm:w-80 shrink-0 snap-center task-board-column bg-slate-900/60 border border-slate-800/80 rounded-2xl flex flex-col max-h-[calc(100dvh-170px)] sm:max-h-[calc(100vh-180px)] backdrop-blur-sm"
+              >
               {/* Column Header */}
               <div className="p-4 border-b border-slate-800/80 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2">
@@ -112,13 +161,18 @@ export default function TaskBoardView({ onEditTask, onAddTask }: Props) {
                     const priorityConfig =
                       PRIORITY_BADGES[task.priority] || PRIORITY_BADGES.Normal;
 
-                    const nextStatus = displayStatuses.find((s) => s.id !== status.id);
+                    const isResponsible =
+                      task.respnsapity === 1 || task.responsibility === 1;
 
                     return (
                       <div
                         key={task.id}
                         onClick={() => onEditTask(task)}
-                        className="group bg-slate-950/70 hover:bg-slate-950 border border-slate-800/80 hover:border-indigo-500/40 rounded-xl p-4 cursor-pointer shadow-sm hover:shadow-md transition-all relative overflow-hidden"
+                        className={`group rounded-xl p-4 cursor-pointer transition-all relative overflow-hidden ${
+                          isResponsible
+                            ? 'bg-slate-950 border-2 border-indigo-400 shadow-[0_0_18px_rgba(99,102,241,0.35)] ring-1 ring-indigo-300/40 hover:border-indigo-300'
+                            : 'bg-slate-950/70 hover:bg-slate-950 border border-slate-800/80 hover:border-indigo-500/40 shadow-sm hover:shadow-md'
+                        }`}
                       >
                         {/* Status color left border accent */}
                         <div
@@ -126,15 +180,28 @@ export default function TaskBoardView({ onEditTask, onAddTask }: Props) {
                           style={{ backgroundColor: status.color || '#6366f1' }}
                         />
 
-                        {/* Top: Priority & ID */}
+                        {/* Top: Priority, Type, Responsible & ID */}
                         <div className="flex items-center justify-between mb-2 pl-1">
-                          <span
-                            className={`text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1.5 ${priorityConfig.bg} ${priorityConfig.text}`}
-                          >
-                            <span className={`w-1.5 h-1.5 rounded-full ${priorityConfig.dot}`} />
-                            {task.priority}
-                          </span>
-                          <span className="text-[10px] font-mono text-slate-400">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span
+                              className={`text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1.5 ${priorityConfig.bg} ${priorityConfig.text}`}
+                            >
+                              <span className={`w-1.5 h-1.5 rounded-full ${priorityConfig.dot}`} />
+                              {task.priority}
+                            </span>
+                            {task.task_type && (
+                              <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-800/80 text-slate-300 border border-slate-700/80">
+                                {task.task_type.name}
+                              </span>
+                            )}
+                            {isResponsible && (
+                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-indigo-500/25 text-indigo-300 border border-indigo-400/50 flex items-center gap-1 shadow-sm">
+                                <Sparkles className="w-2.5 h-2.5 text-indigo-300" />
+                                Responsible
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] font-mono text-slate-400 shrink-0">
                             #{task.id}
                           </span>
                         </div>
@@ -176,6 +243,15 @@ export default function TaskBoardView({ onEditTask, onAddTask }: Props) {
                                 <span>{task.due_date.substring(0, 10)}</span>
                               </span>
                             )}
+                            {task.attachments && task.attachments.length > 0 && (
+                              <span
+                                className="flex items-center gap-1 text-slate-400 font-mono"
+                                title={`${task.attachments.length} attachment(s)`}
+                              >
+                                <Paperclip className="w-3 h-3 text-indigo-400" />
+                                <span>{task.attachments.length}</span>
+                              </span>
+                            )}
                           </div>
 
                           {/* Quick transition action */}
@@ -204,6 +280,7 @@ export default function TaskBoardView({ onEditTask, onAddTask }: Props) {
             </div>
           );
         })}
+        </div>
       </div>
     </div>
   );

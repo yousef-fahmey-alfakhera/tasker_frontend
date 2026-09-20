@@ -29,6 +29,14 @@ export interface User {
 
 export type TaskStage = 'pending' | 'working' | 'completed';
 
+export interface TaskType {
+  id: number;
+  name: string;
+  type: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface TaskStatus {
   id: number;
   name: string;
@@ -39,6 +47,25 @@ export interface TaskStatus {
 }
 
 export type TaskPriority = 'Low' | 'Normal' | 'High' | 'Urgent';
+
+export interface Attachment {
+  id: number;
+  attachable_type: string;
+  attachable_id: number;
+  file: string;
+  path: string;
+  file_path: string;
+  type: string;
+  size: number;
+  created_by?: number;
+  creator?: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  created_at?: string;
+  updated_at?: string;
+}
 
 export interface Task {
   id: number;
@@ -53,6 +80,11 @@ export interface Task {
   workspace_id: number;
   status_id: number;
   status?: TaskStatus;
+  task_type_id?: number;
+  task_type?: TaskType;
+  respnsapity?: number;
+  responsibility?: number;
+  attachments?: Attachment[];
   start_date?: string | null;
   due_date?: string | null;
   working_at?: string | null;
@@ -113,18 +145,21 @@ export interface CreateTaskPayload {
   project_id: number;
   workspace_id: number;
   status_id: number;
+  task_type_id?: number;
   title: string;
   description?: string;
   priority?: TaskPriority;
   position?: number;
   start_date?: string;
   due_date?: string;
+  attachments?: File[];
 }
 
 export interface UpdateTaskPayload {
   project_id?: number;
   workspace_id?: number;
   status_id?: number;
+  task_type_id?: number;
   title?: string;
   description?: string;
   priority?: TaskPriority;
@@ -141,3 +176,45 @@ export interface TaskFilterParams {
   priority?: TaskPriority;
   search?: string;
 }
+
+// Settings & User Settings Types
+export type SettingType = 'string' | 'bool' | 'num';
+
+export interface Setting {
+  id: number;
+  name: string;
+  type: SettingType;
+  default: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface UserSetting {
+  id: number;
+  user_id: number;
+  setting_id: number;
+  setting_name: string;
+  type: SettingType;
+  value: string;
+  casted_value?: string | number | boolean;
+  setting?: Setting;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface StoreUserSettingPayload {
+  setting_id: number;
+  value: string;
+}
+
+export interface ThemeResponse {
+  theme_mode: string;
+  is_light: boolean;
+  is_dark: boolean;
+}
+
+export interface ThemePayload {
+  theme: 'light' | 'dark';
+}
+

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { ThemeProvider } from '@/context/ThemeContext';
 import { TaskProvider, useTasks } from '@/context/TaskContext';
 import AuthScreen from '@/components/auth/AuthScreen';
 import AppHeader from '@/components/layout/AppHeader';
@@ -33,9 +34,11 @@ function TaskerContent() {
   if (isAuthLoading) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-400 gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-          <Layers className="w-6 h-6 animate-pulse" />
-        </div>
+        <img
+          src="/tasker_logo.jpg"
+          alt="Tasker Logo"
+          className="w-14 h-14 rounded-2xl object-cover border border-indigo-500/30 shadow-lg shadow-indigo-500/20 animate-pulse"
+        />
         <div className="flex items-center gap-2 text-xs font-mono">
           <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
           <span>Initializing Tasker workspace...</span>
@@ -73,7 +76,7 @@ function TaskerContent() {
 
       {/* Global Error Notice if any */}
       {taskError && (
-        <div className="mx-6 mt-4 p-3 bg-red-950/40 border border-red-500/30 rounded-xl text-red-200 text-xs flex items-center justify-between">
+        <div className="mx-3 sm:mx-6 mt-3 sm:mt-4 p-3 bg-red-950/40 border border-red-500/30 rounded-xl text-red-200 text-xs flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
             <span>{taskError}</span>
@@ -135,9 +138,11 @@ function TaskerContent() {
 export default function Home() {
   return (
     <AuthProvider>
-      <TaskProvider>
-        <TaskerContent />
-      </TaskProvider>
+      <ThemeProvider>
+        <TaskProvider>
+          <TaskerContent />
+        </TaskProvider>
+      </ThemeProvider>
     </AuthProvider>
   );
 }

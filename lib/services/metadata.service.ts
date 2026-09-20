@@ -1,7 +1,18 @@
 import { apiClient } from '@/lib/api';
-import { ApiResponse, Project, TaskStatus, Workspace } from '@/types/api';
+import { ApiResponse, Project, TaskStatus, TaskType, Workspace } from '@/types/api';
 
 export const metadataService = {
+  /**
+   * List all task types
+   * GET /task-types
+   */
+  async getTaskTypes(): Promise<ApiResponse<TaskType[]>> {
+    const response = await apiClient.get<ApiResponse<TaskType[]>>(
+      '/task-types'
+    );
+    return response.data;
+  },
+
   /**
    * List all workflow task statuses
    * GET /task-statuses

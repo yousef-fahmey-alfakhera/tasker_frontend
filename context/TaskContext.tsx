@@ -8,15 +8,18 @@ import React, {
   useCallback,
 } from 'react';
 import {
+  Attachment,
   CreateTaskPayload,
   Project,
   Task,
   TaskPriority,
   TaskStatus,
+  TaskType,
   UpdateTaskPayload,
   Workspace,
 } from '@/types/api';
 import tasksService from '@/lib/services/tasks.service';
+import attachmentsService from '@/lib/services/attachments.service';
 import metadataService from '@/lib/services/metadata.service';
 import { useAuth } from './AuthContext';
 import { getErrorMessage } from '@/lib/api';
@@ -24,6 +27,7 @@ import { getErrorMessage } from '@/lib/api';
 interface TaskContextType {
   tasks: Task[];
   statuses: TaskStatus[];
+  taskTypes: TaskType[];
   workspaces: Workspace[];
   projects: Project[];
   activeWorkspaceId: number | null;
@@ -39,6 +43,8 @@ interface TaskContextType {
   createTask: (payload: CreateTaskPayload) => Promise<Task>;
   updateTask: (id: number, payload: UpdateTaskPayload) => Promise<Task>;
   deleteTask: (id: number) => Promise<void>;
+  uploadTaskAttachment: (taskId: number, file: File) => Promise<Attachment>;
+  deleteTaskAttachment: (taskId: number, attachmentId: number) => Promise<void>;
   createProject: (payload: { name: string; description?: string }) => Promise<Project>;
   createWorkspace: (payload: {
     project_id?: number;
@@ -60,6 +66,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [statuses, setStatuses] = useState<TaskStatus[]>([]);
+  const [taskTypes, setTaskTypes] = useState<TaskType[]>([]);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
 
@@ -73,19 +80,23 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [isLoadingMeta, setIsLoadingMeta] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch metadata: statuses, workspaces, projects
+  // Fetch metadata: statuses, taskTypes, workspaces, projects
   const fetchMetadata = useCallback(async () => {
     if (!isAuthenticated) return;
     setIsLoadingMeta(true);
     try {
-      const [statusesRes, workspacesRes, projectsRes] = await Promise.allSettled([
+      const [statusesRes, taskTypesRes, workspacesRes, projectsRes] = await Promise.allSettled([
         metadataService.getTaskStatuses(),
+        metadataService.getTaskTypes(),
         metadataService.getWorkspaces(),
         metadataService.getProjects(),
       ]);
 
       if (statusesRes.status === 'fulfilled' && statusesRes.value.success) {
         setStatuses(statusesRes.value.data || []);
+      }
+      if (taskTypesRes.status === 'fulfilled' && taskTypesRes.value.success) {
+        setTaskTypes(taskTypesRes.value.data || []);
       }
       if (workspacesRes.status === 'fulfilled' && workspacesRes.value.success) {
         const fetchedWorkspaces = workspacesRes.value.data || [];
@@ -212,6 +223,67 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const uploadTaskAttachment = async (
+    taskId: number,
+    file: File
+  ): Promise<Attachment> => {
+    setError(null);
+    try {
+      const res = await attachmentsService.uploadAttachment(file, 'task', taskId);
+      if (res.success && res.data) {
+        const newAttachment = res.data;
+        setTasks((prev) =>
+          prev.map((t) => {
+            if (t.id === taskId) {
+              const currentAttachments = t.attachments || [];
+              return {
+                ...t,
+                attachments: [...currentAttachments, newAttachment],
+              };
+            }
+            return t;
+          })
+        );
+        return newAttachment;
+      }
+      throw new Error(res.message || 'Failed to upload attachment');
+    } catch (err) {
+      const msg = getErrorMessage(err);
+      setError(msg);
+      throw new Error(msg);
+    }
+  };
+
+  const deleteTaskAttachment = async (
+    taskId: number,
+    attachmentId: number
+  ): Promise<void> => {
+    setError(null);
+    try {
+      const res = await attachmentsService.deleteAttachment(attachmentId);
+      if (res.success) {
+        setTasks((prev) =>
+          prev.map((t) => {
+            if (t.id === taskId) {
+              const currentAttachments = t.attachments || [];
+              return {
+                ...t,
+                attachments: currentAttachments.filter((a) => a.id !== attachmentId),
+              };
+            }
+            return t;
+          })
+        );
+      } else {
+        throw new Error(res.message || 'Failed to delete attachment');
+      }
+    } catch (err) {
+      const msg = getErrorMessage(err);
+      setError(msg);
+      throw new Error(msg);
+    }
+  };
+
   const createProject = async (payload: {
     name: string;
     description?: string;
@@ -249,6 +321,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       value={{
         tasks,
         statuses,
+        taskTypes,
         workspaces,
         projects,
         activeWorkspaceId,
@@ -263,6 +336,8 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         createTask,
         updateTask,
         deleteTask,
+        uploadTaskAttachment,
+        deleteTaskAttachment,
         createProject,
         createWorkspace,
         setActiveWorkspaceId,

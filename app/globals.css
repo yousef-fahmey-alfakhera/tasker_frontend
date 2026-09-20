@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #020617;
+  --foreground: #f8fafc;
 }
 
 @theme inline {
@@ -12,15 +12,160 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* =========================================================
+   LIGHT MODE STYLING SYSTEM
+   ========================================================= */
+html.light,
+html[data-theme="light"],
+body.light {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+
+  /* Invert/map slate color scale for crisp light mode */
+  --color-slate-950: #f8fafc;
+  --color-slate-900: #ffffff;
+  --color-slate-850: #f1f5f9;
+  --color-slate-800: #e2e8f0;
+  --color-slate-700: #cbd5e1;
+  --color-slate-600: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-400: #64748b;
+  --color-slate-300: #334155;
+  --color-slate-200: #1e293b;
+  --color-slate-100: #0f172a;
+  --color-slate-50: #020617;
+}
+
+/* Text adjustments for light mode */
+html.light h1,
+html.light h2,
+html.light h3,
+html.light h4,
+html.light h5,
+html.light h6 {
+  color: #0f172a;
+}
+
+html.light .text-white:not([class*="bg-indigo"]):not([class*="bg-violet"]):not([class*="bg-rose"]):not([class*="bg-emerald"]):not([class*="bg-gradient"]):not([class*="from-"]):not(button) {
+  color: #0f172a !important;
+}
+
+html.light .text-slate-100 {
+  color: #0f172a !important;
+}
+
+html.light .text-slate-200 {
+  color: #1e293b !important;
+}
+
+html.light .text-slate-300 {
+  color: #334155 !important;
+}
+
+html.light .text-slate-400 {
+  color: #64748b !important;
+}
+
+/* Ensure buttons with solid/gradient colored backgrounds retain crisp white text */
+html.light button.text-white,
+html.light button[class*="bg-indigo-600"],
+html.light button[class*="bg-violet-600"],
+html.light button[class*="bg-rose-600"],
+html.light button[class*="from-indigo-600"],
+html.light button[class*="bg-gradient-to-r"] {
+  color: #ffffff !important;
+}
+
+html.light button[class*="bg-indigo-600"] span,
+html.light button[class*="bg-violet-600"] span,
+html.light button[class*="bg-rose-600"] span,
+html.light button[class*="from-indigo-600"] span,
+html.light button[class*="bg-gradient-to-r"] span {
+  color: #ffffff !important;
+}
+
+/* Light mode backgrounds & borders */
+html.light .bg-slate-950 {
+  background-color: #f8fafc !important;
+}
+
+html.light .bg-slate-900 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.light .bg-slate-900\/90,
+html.light .bg-slate-900\/80,
+html.light .bg-slate-900\/60 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.light .bg-slate-950\/70,
+html.light .bg-slate-950\/80,
+html.light .bg-slate-950\/90 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.light .border-slate-800,
+html.light .border-slate-800\/80,
+html.light .border-slate-800\/60 {
+  border-color: #e2e8f0 !important;
+}
+
+html.light .hover\:bg-slate-800:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+html.light .hover\:text-white:hover {
+  color: #0f172a !important;
+}
+
+/* Inputs, textareas, and selects in light mode */
+html.light input:not([type="checkbox"]):not([type="radio"]),
+html.light textarea,
+html.light select {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Task board columns */
+html.light div.w-80,
+html.light .task-board-column {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Hide scrollbar utility for clean mobile horizontal tab strips */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Dropdown menus & popups */
+html.light .shadow-2xl {
+  box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.05) !important;
+}
+
+html.light .bg-slate-950\/40 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
 }

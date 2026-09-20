@@ -49,12 +49,12 @@ Supports filtering by query parameters: `workspace_id`, `project_id`, `status_id
 
 ## 2. Create Task
 
-Creates a task. If `position` is omitted, it automatically receives `max(position) + 1` within its workspace.
+Creates a task. If `position` is omitted, it automatically receives `max(position) + 1` within its workspace. Supports optional file attachments in `multipart/form-data` (`attachments[]` or `attachment`) which are automatically saved to `tasks/attachments` (`Task::ATTACHMENT_PATH`).
 
 - **Method**: `POST`
 - **URL**: `/api/tasks`
 
-### Request Body
+### Request Body (JSON or multipart/form-data)
 ```json
 {
   "project_id": 1,
@@ -64,7 +64,8 @@ Creates a task. If `position` is omitted, it automatically receives `max(positio
   "description": "Design ClickUp-like task board",
   "priority": "Normal",
   "start_date": "2026-09-18 10:00:00",
-  "due_date": "2026-09-25 18:00:00"
+  "due_date": "2026-09-25 18:00:00",
+  "attachments": ["<file>"]
 }
 ```
 
@@ -82,6 +83,18 @@ Creates a task. If `position` is omitted, it automatically receives `max(positio
     "workspace_id": 1,
     "status_id": 1,
     "created_by": 1,
+    "attachments": [
+      {
+        "id": 1,
+        "attachable_type": "App\\Models\\Task",
+        "attachable_id": 2,
+        "file": "mockup.png",
+        "path": "tasks/attachments/hash.png",
+        "file_path": "http://localhost/storage/tasks/attachments/hash.png",
+        "type": "image/png",
+        "size": 102400
+      }
+    ],
     "working_at": null,
     "completed_at": null,
     "actual_minutes": null

@@ -378,6 +378,229 @@
           }
         }
       ]
+    },
+    {
+      "name": "Attachments",
+      "item": [
+        {
+          "name": "List Attachments",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {
+              "raw": "{{base_url}}/attachments?attachable_type=task&attachable_id=1",
+              "host": ["{{base_url}}"],
+              "path": ["attachments"],
+              "query": [
+                {"key": "attachable_type", "value": "task"},
+                {"key": "attachable_id", "value": "1"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Upload Attachment",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {"key": "file", "type": "file", "src": []},
+                {"key": "attachable_type", "value": "task", "type": "text"},
+                {"key": "attachable_id", "value": "1", "type": "text"}
+              ]
+            },
+            "url": {"raw": "{{base_url}}/attachments", "host": ["{{base_url}}"], "path": ["attachments"]}
+          }
+        },
+        {
+          "name": "Show Attachment",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/attachments/1", "host": ["{{base_url}}"], "path": ["attachments", "1"]}
+          }
+        },
+        {
+          "name": "Update / Replace Attachment File",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {"key": "file", "type": "file", "src": []}
+              ]
+            },
+            "url": {"raw": "{{base_url}}/attachments/1", "host": ["{{base_url}}"], "path": ["attachments", "1"]}
+          }
+        },
+        {
+          "name": "Delete Attachment",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "DELETE",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/attachments/1", "host": ["{{base_url}}"], "path": ["attachments", "1"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Permissions",
+      "item": [
+        {
+          "name": "Get Authenticated User Permissions",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/auth/permissions", "host": ["{{base_url}}"], "path": ["auth", "permissions"]}
+          }
+        },
+        {
+          "name": "List All Permissions",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/permissions", "host": ["{{base_url}}"], "path": ["permissions"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "Settings",
+      "item": [
+        {
+          "name": "List Settings",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/settings", "host": ["{{base_url}}"], "path": ["settings"]}
+          }
+        },
+        {
+          "name": "Create Setting",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [
+              {"key": "Accept", "value": "application/json", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"theme_mode\",\n  \"type\": \"string\",\n  \"default\": \"light\",\n  \"description\": \"Active UI theme mode\"\n}"
+            },
+            "url": {"raw": "{{base_url}}/settings", "host": ["{{base_url}}"], "path": ["settings"]}
+          }
+        },
+        {
+          "name": "Show Setting",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/settings/1", "host": ["{{base_url}}"], "path": ["settings", "1"]}
+          }
+        },
+        {
+          "name": "Update Setting",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [
+              {"key": "Accept", "value": "application/json", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"default\": \"dark\"\n}"
+            },
+            "url": {"raw": "{{base_url}}/settings/1", "host": ["{{base_url}}"], "path": ["settings", "1"]}
+          }
+        },
+        {
+          "name": "Delete Setting",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "DELETE",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/settings/1", "host": ["{{base_url}}"], "path": ["settings", "1"]}
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Settings & Theme",
+      "item": [
+        {
+          "name": "Get Theme Mode",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/user-settings/theme", "host": ["{{base_url}}"], "path": ["user-settings", "theme"]}
+          }
+        },
+        {
+          "name": "Set Theme Mode (Light / Dark)",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [
+              {"key": "Accept", "value": "application/json", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"theme\": \"light\"\n}"
+            },
+            "url": {"raw": "{{base_url}}/user-settings/theme", "host": ["{{base_url}}"], "path": ["user-settings", "theme"]}
+          }
+        },
+        {
+          "name": "List User Settings",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/user-settings", "host": ["{{base_url}}"], "path": ["user-settings"]}
+          }
+        },
+        {
+          "name": "Store User Setting",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [
+              {"key": "Accept", "value": "application/json", "type": "text"},
+              {"key": "Content-Type", "value": "application/json", "type": "text"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"setting_id\": 1,\n  \"value\": \"light\"\n}"
+            },
+            "url": {"raw": "{{base_url}}/user-settings", "host": ["{{base_url}}"], "path": ["user-settings"]}
+          }
+        },
+        {
+          "name": "Delete User Setting (Reset)",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "method": "DELETE",
+            "header": [{"key": "Accept", "value": "application/json", "type": "text"}],
+            "url": {"raw": "{{base_url}}/user-settings/1", "host": ["{{base_url}}"], "path": ["user-settings", "1"]}
+          }
+        }
+      ]
     }
   ]
 }
