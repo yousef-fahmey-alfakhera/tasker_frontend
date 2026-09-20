@@ -89,22 +89,20 @@ export default function AuthScreen() {
             <button
               type="button"
               onClick={() => switchApiUrl(API_URLS.LOCAL)}
-              className={`px-2.5 py-1 rounded-full font-medium transition-all ${
-                isLocal
+              className={`px-2.5 py-1 rounded-full font-medium transition-all ${isLocal
                   ? 'bg-indigo-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
-              }`}
+                }`}
             >
               Local
             </button>
             <button
               type="button"
               onClick={() => switchApiUrl(API_URLS.REMOTE)}
-              className={`px-2.5 py-1 rounded-full font-medium transition-all ${
-                !isLocal
+              className={`px-2.5 py-1 rounded-full font-medium transition-all ${!isLocal
                   ? 'bg-indigo-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
-              }`}
+                }`}
             >
               Remote
             </button>
@@ -124,7 +122,7 @@ export default function AuthScreen() {
             />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-white flex items-center justify-center gap-1.5">
-            Tasker <span className="text-indigo-400 text-xs font-mono uppercase px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20">API v1</span>
+            Tasker <span className="text-indigo-400 text-xs font-mono uppercase px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20">v1</span>
           </h1>
           <p className="text-sm text-slate-400 mt-1">
             {isRegister
@@ -141,11 +139,10 @@ export default function AuthScreen() {
               setIsRegister(false);
               setError(null);
             }}
-            className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
-              !isRegister
+            className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${!isRegister
                 ? 'bg-indigo-600 text-white shadow-md'
                 : 'text-slate-400 hover:text-slate-200'
-            }`}
+              }`}
           >
             Sign In
           </button>
@@ -155,11 +152,10 @@ export default function AuthScreen() {
               setIsRegister(true);
               setError(null);
             }}
-            className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
-              isRegister
+            className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${isRegister
                 ? 'bg-indigo-600 text-white shadow-md'
                 : 'text-slate-400 hover:text-slate-200'
-            }`}
+              }`}
           >
             Create Account
           </button>
