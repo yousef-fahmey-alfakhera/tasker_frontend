@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { TaskProvider, useTasks } from '@/context/TaskContext';
+import { I18nProvider } from '@/context/I18nContext';
 import AuthScreen from '@/components/auth/AuthScreen';
 import AppHeader from '@/components/layout/AppHeader';
 import TaskBoardView from '@/components/tasks/TaskBoardView';
@@ -12,20 +13,20 @@ import TaskDialog from '@/components/tasks/TaskDialog';
 import NewProjectModal from '@/components/modals/NewProjectModal';
 import NewWorkspaceModal from '@/components/modals/NewWorkspaceModal';
 import { Task } from '@/types/api';
-import { AlertCircle, Layers, Loader2, RefreshCw } from 'lucide-react';
+import { AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 
 function TaskerContent() {
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const {
     error: taskError,
     isLoadingTasks,
-    isLoadingMeta,
     refreshAll,
   } = useTasks();
 
   const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [initialStatusId, setInitialStatusId] = useState<number | undefined>(undefined);
+  const [isQuickCreate, setIsQuickCreate] = useState<boolean>(false);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false);
@@ -52,14 +53,16 @@ function TaskerContent() {
     return <AuthScreen />;
   }
 
-  const handleOpenNewTask = (statusId?: number) => {
+  const handleOpenNewTask = (statusId?: number, isQuick: boolean = false) => {
     setTaskToEdit(null);
     setInitialStatusId(statusId);
+    setIsQuickCreate(isQuick);
     setIsTaskDialogOpen(true);
   };
 
   const handleEditTask = (task: Task) => {
     setTaskToEdit(task);
+    setIsQuickCreate(false);
     setIsTaskDialogOpen(true);
   };
 
@@ -69,7 +72,7 @@ function TaskerContent() {
       <AppHeader
         viewMode={viewMode}
         onToggleViewMode={setViewMode}
-        onOpenNewTask={() => handleOpenNewTask()}
+        onOpenNewTask={(isQuick) => handleOpenNewTask(undefined, isQuick ?? true)}
         onOpenNewProject={() => setIsProjectModalOpen(true)}
         onOpenNewWorkspace={() => setIsWorkspaceModalOpen(true)}
       />
@@ -104,12 +107,12 @@ function TaskerContent() {
         {viewMode === 'board' ? (
           <TaskBoardView
             onEditTask={handleEditTask}
-            onAddTask={handleOpenNewTask}
+            onAddTask={(statusId, isQuick) => handleOpenNewTask(statusId, isQuick ?? false)}
           />
         ) : (
           <TaskListView
             onEditTask={handleEditTask}
-            onAddTask={() => handleOpenNewTask()}
+            onAddTask={() => handleOpenNewTask(undefined, false)}
           />
         )}
       </main>
@@ -120,6 +123,7 @@ function TaskerContent() {
         onClose={() => setIsTaskDialogOpen(false)}
         taskToEdit={taskToEdit}
         initialStatusId={initialStatusId}
+        isQuickCreate={isQuickCreate}
       />
 
       <NewProjectModal
@@ -138,11 +142,13 @@ function TaskerContent() {
 export default function Home() {
   return (
     <AuthProvider>
-      <ThemeProvider>
-        <TaskProvider>
-          <TaskerContent />
-        </TaskProvider>
-      </ThemeProvider>
+      <I18nProvider>
+        <ThemeProvider>
+          <TaskProvider>
+            <TaskerContent />
+          </TaskProvider>
+        </ThemeProvider>
+      </I18nProvider>
     </AuthProvider>
   );
 }

@@ -23,9 +23,14 @@ import {
 interface AuthContextType {
   user: User | null;
   token: string | null;
+  permissions: string[];
   isAuthenticated: boolean;
   isLoading: boolean;
   activeApiUrl: string;
+  hasPermission: (name: string) => boolean;
+  canCreateTask: boolean;
+  canUpdateTask: boolean;
+  canDeleteTask: boolean;
   login: (payload: LoginPayload) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
   logout: () => Promise<void>;
@@ -39,8 +44,24 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [permissions, setPermissions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [activeApiUrl, setActiveApiUrlState] = useState<string>('');
+
+  const fetchPermissions = useCallback(async () => {
+    try {
+      const res = await authService.getPermissions();
+      if (res.success && Array.isArray(res.data)) {
+        const permNames = res.data.map((p) => p.name);
+        setPermissions(permNames);
+        localStorage.setItem(STORAGE_KEYS.PERMISSIONS, JSON.stringify(permNames));
+        return permNames;
+      }
+    } catch {
+      // Ignore or user might have empty permissions
+    }
+    return [];
+  }, []);
 
   // Synchronize state with localStorage and fetch profile if token exists
   const initAuth = useCallback(async () => {
@@ -48,6 +69,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setActiveApiUrlState(getApiBaseUrl());
       const storedToken = localStorage.getItem(STORAGE_KEYS.TOKEN);
       const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
+      const storedPerms = localStorage.getItem(STORAGE_KEYS.PERMISSIONS);
+
+      if (storedPerms) {
+        try {
+          setPermissions(JSON.parse(storedPerms));
+        } catch {
+          // ignore parse error
+        }
+      }
 
       if (storedToken) {
         setToken(storedToken);
@@ -58,14 +88,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // ignore JSON parse failure
           }
         }
-        // Fetch fresh profile from backend
+        // Fetch fresh profile and permissions from backend
         try {
-          const profileRes = await authService.getProfile();
-          if (profileRes.success && profileRes.data) {
-            setUser(profileRes.data);
+          const [profileRes] = await Promise.allSettled([
+            authService.getProfile(),
+            fetchPermissions(),
+          ]);
+          if (profileRes.status === 'fulfilled' && profileRes.value.success && profileRes.value.data) {
+            setUser(profileRes.value.data);
             localStorage.setItem(
               STORAGE_KEYS.USER,
-              JSON.stringify(profileRes.data)
+              JSON.stringify(profileRes.value.data)
             );
           }
         } catch {
@@ -75,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [fetchPermissions]);
 
   useEffect(() => {
     initAuth();
@@ -84,8 +117,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const handleUnauthorized = () => {
       setUser(null);
       setToken(null);
+      setPermissions([]);
       localStorage.removeItem(STORAGE_KEYS.TOKEN);
       localStorage.removeItem(STORAGE_KEYS.USER);
+      localStorage.removeItem(STORAGE_KEYS.PERMISSIONS);
     };
 
     const handleUrlChanged = (e: Event) => {
@@ -113,6 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
       setUser(userData);
+      await fetchPermissions();
     } else {
       throw new Error(response.message || 'Login failed');
     }
@@ -129,6 +165,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
       setUser(userData);
+      await fetchPermissions();
     } else {
       throw new Error(response.message || 'Registration failed');
     }
@@ -144,18 +181,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setUser(null);
       setToken(null);
+      setPermissions([]);
       localStorage.removeItem(STORAGE_KEYS.TOKEN);
       localStorage.removeItem(STORAGE_KEYS.USER);
+      localStorage.removeItem(STORAGE_KEYS.PERMISSIONS);
     }
   };
 
   const refreshProfile = async () => {
-    const profileRes = await authService.getProfile();
-    if (profileRes.success && profileRes.data) {
-      setUser(profileRes.data);
+    const [profileRes] = await Promise.allSettled([
+      authService.getProfile(),
+      fetchPermissions(),
+    ]);
+    if (profileRes.status === 'fulfilled' && profileRes.value.success && profileRes.value.data) {
+      setUser(profileRes.value.data);
       localStorage.setItem(
         STORAGE_KEYS.USER,
-        JSON.stringify(profileRes.data)
+        JSON.stringify(profileRes.value.data)
       );
     }
   };
@@ -178,14 +220,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initAuth();
   };
 
+  const hasPermission = useCallback(
+    (name: string): boolean => {
+      // If user is admin by role or email
+      if (user?.roles?.includes('admin') || user?.email === 'admin@admin.com') {
+        return true;
+      }
+      return permissions.includes(name);
+    },
+    [permissions, user]
+  );
+
+  const canCreateTask = hasPermission('create_tasks');
+  const canUpdateTask = hasPermission('update_tasks');
+  const canDeleteTask = hasPermission('delete_tasks');
+
   return (
     <AuthContext.Provider
       value={{
         user,
         token,
+        permissions,
         isAuthenticated: !!token && !!user,
         isLoading,
         activeApiUrl,
+        hasPermission,
+        canCreateTask,
+        canUpdateTask,
+        canDeleteTask,
         login,
         register,
         logout,

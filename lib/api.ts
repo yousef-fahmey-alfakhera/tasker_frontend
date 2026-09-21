@@ -23,6 +23,9 @@ apiClient.interceptors.request.use(
       if (token && !config.headers.Authorization) {
         config.headers.Authorization = `Bearer ${token}`;
       }
+
+      const lang = localStorage.getItem(STORAGE_KEYS.LANGUAGE) || 'en';
+      config.headers['Accept-Language'] = lang;
     }
 
     return config;
@@ -38,6 +41,7 @@ apiClient.interceptors.response.use(
       if (typeof window !== 'undefined') {
         localStorage.removeItem(STORAGE_KEYS.TOKEN);
         localStorage.removeItem(STORAGE_KEYS.USER);
+        localStorage.removeItem(STORAGE_KEYS.PERMISSIONS);
         window.dispatchEvent(new CustomEvent('tasker_unauthorized'));
       }
     }

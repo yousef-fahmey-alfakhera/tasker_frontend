@@ -3,12 +3,17 @@ import { ApiResponse, Project, TaskStatus, TaskType, Workspace } from '@/types/a
 
 export const metadataService = {
   /**
-   * List all task types
-   * GET /task-types
+   * List all task types, optionally filtered by project_id
+   * GET /task-types?project_id={projectId}
    */
-  async getTaskTypes(): Promise<ApiResponse<TaskType[]>> {
+  async getTaskTypes(projectId?: number | null): Promise<ApiResponse<TaskType[]>> {
+    const params: Record<string, number> = {};
+    if (projectId) {
+      params.project_id = projectId;
+    }
     const response = await apiClient.get<ApiResponse<TaskType[]>>(
-      '/task-types'
+      '/task-types',
+      { params }
     );
     return response.data;
   },

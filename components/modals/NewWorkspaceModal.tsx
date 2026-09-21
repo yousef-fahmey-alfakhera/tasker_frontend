@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useTasks } from '@/context/TaskContext';
+import { useTranslation } from '@/context/I18nContext';
 import { Briefcase, X } from 'lucide-react';
 
 interface Props {
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function NewWorkspaceModal({ isOpen, onClose }: Props) {
+  const { t } = useTranslation();
   const { projects, activeProjectId, createWorkspace } = useTasks();
   const [projectId, setProjectId] = useState<number | undefined>(
     activeProjectId || (projects[0]?.id)
@@ -52,11 +54,12 @@ export default function NewWorkspaceModal({ isOpen, onClose }: Props) {
               <Briefcase className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-semibold text-white">Create New Workspace</h3>
-              <p className="text-xs text-slate-400">Team workspace to house your tasks</p>
+              <h3 className="font-semibold text-white">{t('create_workspace_title')}</h3>
+              <p className="text-xs text-slate-400">{t('create_workspace_desc')}</p>
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
           >
@@ -73,14 +76,14 @@ export default function NewWorkspaceModal({ isOpen, onClose }: Props) {
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div>
             <label className="block text-xs font-medium text-slate-300 mb-1">
-              Belongs to Project
+              {t('project')}
             </label>
             <select
               value={projectId || ''}
               onChange={(e) => setProjectId(e.target.value ? Number(e.target.value) : undefined)}
               className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-violet-500 transition-colors"
             >
-              <option value="">No Project (Standalone)</option>
+              <option value="">{t('all_projects')}</option>
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
@@ -91,27 +94,27 @@ export default function NewWorkspaceModal({ isOpen, onClose }: Props) {
 
           <div>
             <label className="block text-xs font-medium text-slate-300 mb-1">
-              Workspace Name *
+              {t('workspace_name_label')}
             </label>
             <input
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Backend Engineering"
+              placeholder={t('workspace_name_placeholder')}
               className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 transition-colors"
             />
           </div>
 
           <div>
             <label className="block text-xs font-medium text-slate-300 mb-1">
-              Description (optional)
+              {t('description_label')}
             </label>
             <textarea
               rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Workspace purpose and responsibilities"
+              placeholder={t('workspace_desc_placeholder')}
               className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 transition-colors resize-none"
             />
           </div>
@@ -122,14 +125,14 @@ export default function NewWorkspaceModal({ isOpen, onClose }: Props) {
               onClick={onClose}
               className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors"
             >
-              Cancel
+              {t('cancel')}
             </button>
             <button
               type="submit"
               disabled={loading || !name.trim()}
               className="px-4 py-2 text-xs font-semibold bg-violet-600 hover:bg-violet-500 text-white rounded-xl shadow-md shadow-violet-600/20 disabled:opacity-50 transition-all flex items-center gap-2"
             >
-              {loading ? 'Creating...' : 'Create Workspace'}
+              {loading ? t('saving') : t('new_workspace')}
             </button>
           </div>
         </form>

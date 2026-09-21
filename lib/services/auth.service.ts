@@ -58,6 +58,25 @@ export const authService = {
     const response = await apiClient.put<ApiResponse<User>>('/profile', payload);
     return response.data;
   },
+
+  /**
+   * Retrieve direct and inherited permissions for authenticated user
+   * GET /auth/permissions (fallback /permissions/me)
+   */
+  async getPermissions(): Promise<ApiResponse<import('@/types/api').Permission[]>> {
+    try {
+      const response = await apiClient.get<ApiResponse<import('@/types/api').Permission[]>>(
+        '/auth/permissions'
+      );
+      return response.data;
+    } catch {
+      // Fallback endpoint if /auth/permissions redirects
+      const fallback = await apiClient.get<ApiResponse<import('@/types/api').Permission[]>>(
+        '/permissions/me'
+      );
+      return fallback.data;
+    }
+  },
 };
 
 export default authService;

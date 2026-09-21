@@ -3,27 +3,22 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useTasks } from '@/context/TaskContext';
+import { useTranslation } from '@/context/I18nContext';
 import { API_URLS } from '@/lib/config';
 import { TaskPriority } from '@/types/api';
 import {
-  Briefcase,
   ChevronDown,
-  FolderPlus,
   Kanban,
-  Layers,
   List,
   LogOut,
   Plus,
   Search,
-  Server,
   Settings,
   Sun,
   Moon,
-  User as UserIcon,
-  Filter,
+  Languages,
   Menu,
   X,
-  Sparkles,
 } from 'lucide-react';
 import SettingsModal from '@/components/modals/SettingsModal';
 import { useTheme } from '@/context/ThemeContext';
@@ -31,7 +26,7 @@ import { useTheme } from '@/context/ThemeContext';
 interface Props {
   viewMode: 'board' | 'list';
   onToggleViewMode: (mode: 'board' | 'list') => void;
-  onOpenNewTask: () => void;
+  onOpenNewTask: (isQuickCreate?: boolean) => void;
   onOpenNewProject: () => void;
   onOpenNewWorkspace: () => void;
 }
@@ -43,6 +38,7 @@ export default function AppHeader({
   onOpenNewProject,
   onOpenNewWorkspace,
 }: Props) {
+  const { t, language, setLanguage } = useTranslation();
   const { user, logout, activeApiUrl, switchApiUrl } = useAuth();
   const { themeMode, toggleTheme, isLight } = useTheme();
   const {
@@ -70,9 +66,13 @@ export default function AppHeader({
   const priorities: (TaskPriority | 'All')[] = ['All', 'Urgent', 'High', 'Normal', 'Low'];
 
   const currentProjectName =
-    projects.find((p) => p.id === activeProjectId)?.name || 'All Projects';
+    projects.find((p) => p.id === activeProjectId)?.name || t('all_projects');
   const currentWorkspaceName =
-    workspaces.find((w) => w.id === activeWorkspaceId)?.name || 'All Workspaces';
+    workspaces.find((w) => w.id === activeWorkspaceId)?.name || t('all_workspaces');
+
+  const handleToggleLanguage = () => {
+    setLanguage(language === 'en' ? 'ar' : 'en');
+  };
 
   return (
     <header className="bg-slate-900/90 border-b border-slate-800/80 sticky top-0 z-40 backdrop-blur-md transition-colors">
@@ -88,7 +88,7 @@ export default function AppHeader({
             />
             <div>
               <div className="font-bold text-white text-sm sm:text-base tracking-tight flex items-center gap-1.5">
-                Tasker
+                {t('tasker')}
               </div>
               <div className="text-[10px] text-slate-400 font-mono -mt-0.5 truncate max-w-[110px] sm:max-w-[160px] lg:hidden">
                 {currentProjectName}
@@ -100,13 +100,13 @@ export default function AppHeader({
 
           {/* Desktop Project dropdown */}
           <div className="hidden xl:flex items-center gap-2">
-            <span className="text-xs text-slate-400">Project:</span>
+            <span className="text-xs text-slate-400">{t('project')}:</span>
             <select
               value={activeProjectId || ''}
               onChange={(e) => setActiveProjectId(e.target.value ? Number(e.target.value) : null)}
               className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors max-w-[150px] truncate"
             >
-              <option value="">All Projects</option>
+              <option value="">{t('all_projects')}</option>
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
@@ -117,7 +117,7 @@ export default function AppHeader({
               type="button"
               onClick={onOpenNewProject}
               className="p-1.5 text-slate-400 hover:text-indigo-400 hover:bg-slate-800 rounded-lg transition-colors"
-              title="Create new project"
+              title={t('new_project')}
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
@@ -125,13 +125,13 @@ export default function AppHeader({
 
           {/* Desktop Workspace dropdown */}
           <div className="hidden xl:flex items-center gap-2">
-            <span className="text-xs text-slate-400">Workspace:</span>
+            <span className="text-xs text-slate-400">{t('workspace')}:</span>
             <select
               value={activeWorkspaceId || ''}
               onChange={(e) => setActiveWorkspaceId(e.target.value ? Number(e.target.value) : null)}
               className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors max-w-[150px] truncate"
             >
-              <option value="">All Workspaces</option>
+              <option value="">{t('all_workspaces')}</option>
               {workspaces.map((w) => (
                 <option key={w.id} value={w.id}>
                   {w.name}
@@ -142,7 +142,7 @@ export default function AppHeader({
               type="button"
               onClick={onOpenNewWorkspace}
               className="p-1.5 text-slate-400 hover:text-violet-400 hover:bg-slate-800 rounded-lg transition-colors"
-              title="Create new workspace"
+              title={t('new_workspace')}
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
@@ -157,7 +157,7 @@ export default function AppHeader({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search tasks..."
+              placeholder={t('search_tasks')}
               className="w-full pl-9 pr-3.5 py-1.5 bg-slate-950/80 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
             />
           </div>
@@ -171,7 +171,7 @@ export default function AppHeader({
           >
             {priorities.map((p) => (
               <option key={p} value={p}>
-                {p === 'All' ? 'All Priorities' : `${p}`}
+                {p === 'All' ? t('all_priorities') : (t(`priority_${p.toLowerCase()}` as any) || p)}
               </option>
             ))}
           </select>
@@ -183,10 +183,11 @@ export default function AppHeader({
           <button
             type="button"
             onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
-            className={`p-1.5 sm:p-2 rounded-xl border border-slate-800 transition-colors lg:hidden ${mobileSearchOpen || searchQuery
-              ? 'bg-indigo-600/20 text-indigo-400 border-indigo-500/40'
-              : 'text-slate-400 hover:text-white bg-slate-950/60'
-              }`}
+            className={`p-1.5 sm:p-2 rounded-xl border border-slate-800 transition-colors lg:hidden ${
+              mobileSearchOpen || searchQuery
+                ? 'bg-indigo-600/20 text-indigo-400 border-indigo-500/40'
+                : 'text-slate-400 hover:text-white bg-slate-950/60'
+            }`}
             title="Toggle search"
             aria-label="Toggle search"
           >
@@ -198,26 +199,28 @@ export default function AppHeader({
             <button
               type="button"
               onClick={() => onToggleViewMode('board')}
-              className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${viewMode === 'board'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-                }`}
+              className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
+                viewMode === 'board'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
               title="Board View"
             >
               <Kanban className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">Board</span>
+              <span className="hidden md:inline">{t('board')}</span>
             </button>
             <button
               type="button"
               onClick={() => onToggleViewMode('list')}
-              className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${viewMode === 'list'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-                }`}
+              className={`p-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all ${
+                viewMode === 'list'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
               title="List View"
             >
               <List className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">List</span>
+              <span className="hidden md:inline">{t('list')}</span>
             </button>
           </div>
 
@@ -230,8 +233,9 @@ export default function AppHeader({
                 className="px-2.5 py-1.5 bg-slate-950 border border-slate-800 hover:border-slate-700 rounded-xl text-[11px] font-mono flex items-center gap-1.5 text-slate-300 transition-colors"
               >
                 <span
-                  className={`w-2 h-2 rounded-full ${isLocal ? 'bg-emerald-400 animate-pulse' : 'bg-indigo-400'
-                    }`}
+                  className={`w-2 h-2 rounded-full ${
+                    isLocal ? 'bg-emerald-400 animate-pulse' : 'bg-indigo-400'
+                  }`}
                 />
                 <span className="hidden lg:inline">
                   {isLocal ? '127.0.0.1:8000' : 'almuder.com'}
@@ -242,7 +246,7 @@ export default function AppHeader({
               {showApiMenu && (
                 <div className="absolute right-0 mt-2 w-64 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-2 z-50 text-xs animate-fadeIn">
                   <div className="p-2 border-b border-slate-800 text-slate-400 font-medium">
-                    Active API Endpoint
+                    {t('active_endpoint')}
                   </div>
                   <button
                     type="button"
@@ -250,14 +254,13 @@ export default function AppHeader({
                       switchApiUrl(API_URLS.LOCAL);
                       setShowApiMenu(false);
                     }}
-                    className={`w-full text-left p-2 rounded-xl transition-colors flex items-center justify-between ${isLocal
-                      ? 'bg-indigo-950/60 text-indigo-300 font-semibold'
-                      : 'text-slate-300 hover:bg-slate-800'
-                      }`}
+                    className={`w-full text-left p-2 rounded-xl transition-colors flex items-center justify-between ${
+                      isLocal
+                        ? 'bg-indigo-950/60 text-indigo-300 font-semibold'
+                        : 'text-slate-300 hover:bg-slate-800'
+                    }`}
                   >
-                    <div>
-                      <div>Local</div>
-                    </div>
+                    <div>Local</div>
                     {isLocal && <span className="w-2 h-2 rounded-full bg-emerald-400" />}
                   </button>
                   <button
@@ -266,14 +269,13 @@ export default function AppHeader({
                       switchApiUrl(API_URLS.REMOTE);
                       setShowApiMenu(false);
                     }}
-                    className={`w-full text-left p-2 rounded-xl transition-colors flex items-center justify-between ${!isLocal
-                      ? 'bg-indigo-950/60 text-indigo-300 font-semibold'
-                      : 'text-slate-300 hover:bg-slate-800'
-                      }`}
+                    className={`w-full text-left p-2 rounded-xl transition-colors flex items-center justify-between ${
+                      !isLocal
+                        ? 'bg-indigo-950/60 text-indigo-300 font-semibold'
+                        : 'text-slate-300 hover:bg-slate-800'
+                    }`}
                   >
-                    <div>
-                      <div>Production</div>
-                    </div>
+                    <div>Production</div>
                     {!isLocal && <span className="w-2 h-2 rounded-full bg-indigo-400" />}
                   </button>
                 </div>
@@ -286,7 +288,7 @@ export default function AppHeader({
             type="button"
             onClick={toggleTheme}
             className="p-1.5 sm:p-2 rounded-xl border border-slate-800 hover:border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white transition-all flex items-center justify-center shrink-0"
-            title={`Switch to ${isLight ? 'Dark' : 'Light'} Mode`}
+            title={`Switch to ${isLight ? t('dark_mode') : t('light_mode')}`}
             aria-label="Toggle color theme"
           >
             {isLight ? (
@@ -296,14 +298,26 @@ export default function AppHeader({
             )}
           </button>
 
-          {/* New Task Button */}
+          {/* Language Toggle Button */}
           <button
             type="button"
-            onClick={onOpenNewTask}
+            onClick={handleToggleLanguage}
+            className="px-2 sm:px-2.5 py-1.5 rounded-xl border border-slate-800 hover:border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white transition-all flex items-center gap-1.5 shrink-0 text-xs font-medium"
+            title={`Switch to ${language === 'en' ? 'Arabic (العربية)' : 'English'}`}
+            aria-label="Toggle language"
+          >
+            <Languages className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="font-mono">{language === 'en' ? 'عربي' : 'EN'}</span>
+          </button>
+
+          {/* Requirement 1 & 2: Top Right "New Task" Button triggers Quick Create (isQuickCreate: true) */}
+          <button
+            type="button"
+            onClick={() => onOpenNewTask(true)}
             className="px-2.5 sm:px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-semibold rounded-xl shadow-md shadow-indigo-600/25 transition-all flex items-center gap-1.5 active:scale-95 shrink-0"
           >
             <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">New Task</span>
+            <span className="hidden sm:inline">{t('new_task')}</span>
           </button>
 
           {/* User Profile Menu (Desktop) */}
@@ -324,12 +338,25 @@ export default function AppHeader({
                   <div className="font-semibold text-white truncate">{user?.name}</div>
                   <div className="text-[11px] text-slate-400 truncate">{user?.email}</div>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={handleToggleLanguage}
+                  className="w-full text-left p-2 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition-colors flex items-center justify-between mt-1"
+                >
+                  <div className="flex items-center gap-2">
+                    <Languages className="w-3.5 h-3.5 text-purple-400" />
+                    <span>{t('language')}: {language === 'en' ? 'English' : 'العربية'}</span>
+                  </div>
+                  <span className="text-[10px] text-indigo-400 font-mono">{t('switch')}</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => {
                     toggleTheme();
                   }}
-                  className="w-full text-left p-2 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition-colors flex items-center justify-between mt-1"
+                  className="w-full text-left p-2 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition-colors flex items-center justify-between mt-0.5"
                 >
                   <div className="flex items-center gap-2">
                     {isLight ? (
@@ -337,10 +364,11 @@ export default function AppHeader({
                     ) : (
                       <Moon className="w-3.5 h-3.5 text-indigo-400" />
                     )}
-                    <span>Theme: {isLight ? 'Light' : 'Dark'}</span>
+                    <span>{t('theme')}: {isLight ? t('light_mode') : t('dark_mode')}</span>
                   </div>
-                  <span className="text-[10px] text-indigo-400 font-mono">Switch</span>
+                  <span className="text-[10px] text-indigo-400 font-mono">{t('switch')}</span>
                 </button>
+
                 <button
                   type="button"
                   onClick={() => {
@@ -350,8 +378,9 @@ export default function AppHeader({
                   className="w-full text-left p-2 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition-colors flex items-center gap-2 mt-0.5"
                 >
                   <Settings className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Settings</span>
+                  <span>{t('settings')}</span>
                 </button>
+
                 <button
                   type="button"
                   onClick={() => {
@@ -361,7 +390,7 @@ export default function AppHeader({
                   className="w-full text-left p-2 rounded-xl text-rose-400 hover:bg-rose-950/30 hover:text-rose-300 transition-colors flex items-center gap-2 mt-1"
                 >
                   <LogOut className="w-3.5 h-3.5" />
-                  <span>Sign Out</span>
+                  <span>{t('logout')}</span>
                 </button>
               </div>
             )}
@@ -389,7 +418,7 @@ export default function AppHeader({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search tasks by title or description..."
+              placeholder={t('search_tasks')}
               className="w-full pl-9 pr-3.5 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
               autoFocus
             />
@@ -403,7 +432,7 @@ export default function AppHeader({
           >
             {priorities.map((p) => (
               <option key={p} value={p}>
-                Priority: {p}
+                {p === 'All' ? t('all_priorities') : (t(`priority_${p.toLowerCase()}` as any) || p)}
               </option>
             ))}
           </select>
@@ -418,7 +447,7 @@ export default function AppHeader({
             {/* Mobile Project Selector */}
             <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
               <div className="flex items-center justify-between mb-1.5 text-xs text-slate-400">
-                <span className="font-medium">Project</span>
+                <span className="font-medium">{t('project')}</span>
                 <button
                   type="button"
                   onClick={() => {
@@ -427,7 +456,7 @@ export default function AppHeader({
                   }}
                   className="text-indigo-400 hover:text-indigo-300 flex items-center gap-1 text-[11px]"
                 >
-                  <Plus className="w-3 h-3" /> New
+                  <Plus className="w-3 h-3" /> {t('new_project')}
                 </button>
               </div>
               <select
@@ -437,7 +466,7 @@ export default function AppHeader({
                 }
                 className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
               >
-                <option value="">All Projects</option>
+                <option value="">{t('all_projects')}</option>
                 {projects.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
@@ -449,7 +478,7 @@ export default function AppHeader({
             {/* Mobile Workspace Selector */}
             <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
               <div className="flex items-center justify-between mb-1.5 text-xs text-slate-400">
-                <span className="font-medium">Workspace</span>
+                <span className="font-medium">{t('workspace')}</span>
                 <button
                   type="button"
                   onClick={() => {
@@ -458,7 +487,7 @@ export default function AppHeader({
                   }}
                   className="text-violet-400 hover:text-violet-300 flex items-center gap-1 text-[11px]"
                 >
-                  <Plus className="w-3 h-3" /> New
+                  <Plus className="w-3 h-3" /> {t('new_workspace')}
                 </button>
               </div>
               <select
@@ -468,7 +497,7 @@ export default function AppHeader({
                 }
                 className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
               >
-                <option value="">All Workspaces</option>
+                <option value="">{t('all_workspaces')}</option>
                 {workspaces.map((w) => (
                   <option key={w.id} value={w.id}>
                     {w.name}
@@ -482,7 +511,7 @@ export default function AppHeader({
           {isDev && (
             <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800/80">
               <div className="text-xs text-slate-400 mb-2 font-medium flex items-center justify-between">
-                <span>Backend Environment</span>
+                <span>{t('active_endpoint')}</span>
                 <span className="font-mono text-[10px] text-slate-500">
                   {isLocal ? 'Local:8000' : 'Production'}
                 </span>
@@ -491,10 +520,11 @@ export default function AppHeader({
                 <button
                   type="button"
                   onClick={() => switchApiUrl(API_URLS.LOCAL)}
-                  className={`p-2 rounded-lg text-xs font-medium border flex items-center justify-center gap-1.5 transition-all ${isLocal
-                    ? 'bg-indigo-950/80 border-indigo-500/50 text-indigo-300 font-semibold'
-                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
-                    }`}
+                  className={`p-2 rounded-lg text-xs font-medium border flex items-center justify-center gap-1.5 transition-all ${
+                    isLocal
+                      ? 'bg-indigo-950/80 border-indigo-500/50 text-indigo-300 font-semibold'
+                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                  }`}
                 >
                   <span className="w-2 h-2 rounded-full bg-emerald-400" />
                   <span>Local API</span>
@@ -502,10 +532,11 @@ export default function AppHeader({
                 <button
                   type="button"
                   onClick={() => switchApiUrl(API_URLS.REMOTE)}
-                  className={`p-2 rounded-lg text-xs font-medium border flex items-center justify-center gap-1.5 transition-all ${!isLocal
-                    ? 'bg-indigo-950/80 border-indigo-500/50 text-indigo-300 font-semibold'
-                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
-                    }`}
+                  className={`p-2 rounded-lg text-xs font-medium border flex items-center justify-center gap-1.5 transition-all ${
+                    !isLocal
+                      ? 'bg-indigo-950/80 border-indigo-500/50 text-indigo-300 font-semibold'
+                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                  }`}
                 >
                   <span className="w-2 h-2 rounded-full bg-indigo-400" />
                   <span>Production</span>
@@ -529,12 +560,20 @@ export default function AppHeader({
             <div className="flex items-center gap-1 shrink-0">
               <button
                 type="button"
+                onClick={handleToggleLanguage}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-purple-300 hover:bg-slate-800 transition-colors"
+                title={t('language')}
+              >
+                <Languages className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
                 onClick={() => {
                   setMobileMenuOpen(false);
                   setIsSettingsOpen(true);
                 }}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-slate-800 transition-colors"
-                title="Settings"
+                title={t('settings')}
               >
                 <Settings className="w-4 h-4" />
               </button>
@@ -545,7 +584,7 @@ export default function AppHeader({
                   logout();
                 }}
                 className="p-1.5 rounded-lg text-rose-400 hover:bg-rose-950/30 transition-colors"
-                title="Sign Out"
+                title={t('logout')}
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -562,4 +601,3 @@ export default function AppHeader({
     </header>
   );
 }
-

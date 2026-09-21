@@ -40,6 +40,7 @@ interface TaskContextType {
   error: string | null;
   // Actions
   fetchTasks: () => Promise<void>;
+  fetchTaskTypes: (projectId?: number | null) => Promise<void>;
   createTask: (payload: CreateTaskPayload) => Promise<Task>;
   updateTask: (id: number, payload: UpdateTaskPayload) => Promise<Task>;
   deleteTask: (id: number) => Promise<void>;
@@ -80,6 +81,19 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [isLoadingMeta, setIsLoadingMeta] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Fetch task types filtered by active project_id
+  const fetchTaskTypes = useCallback(async (projectId?: number | null) => {
+    if (!isAuthenticated) return;
+    try {
+      const res = await metadataService.getTaskTypes(projectId);
+      if (res.success && Array.isArray(res.data)) {
+        setTaskTypes(res.data);
+      }
+    } catch (err) {
+      console.error('Error fetching task types:', err);
+    }
+  }, [isAuthenticated]);
+
   // Fetch metadata: statuses, taskTypes, workspaces, projects
   const fetchMetadata = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -87,7 +101,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     try {
       const [statusesRes, taskTypesRes, workspacesRes, projectsRes] = await Promise.allSettled([
         metadataService.getTaskStatuses(),
-        metadataService.getTaskTypes(),
+        metadataService.getTaskTypes(activeProjectId),
         metadataService.getWorkspaces(),
         metadataService.getProjects(),
       ]);
@@ -119,7 +133,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, activeWorkspaceId, activeProjectId]);
 
-  // Fetch tasks with current filters
+  // Refetch tasks with current filters
   const fetchTasks = useCallback(async () => {
     if (!isAuthenticated) return;
     setIsLoadingTasks(true);
@@ -150,12 +164,20 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     } else {
       setTasks([]);
       setStatuses([]);
+      setTaskTypes([]);
       setWorkspaces([]);
       setProjects([]);
       setActiveWorkspaceId(null);
       setActiveProjectId(null);
     }
   }, [isAuthenticated, activeApiUrl, fetchMetadata]);
+
+  // Refetch task types whenever activeProjectId changes
+  useEffect(() => {
+    if (isAuthenticated && activeProjectId !== null) {
+      fetchTaskTypes(activeProjectId);
+    }
+  }, [isAuthenticated, activeProjectId, fetchTaskTypes]);
 
   // Refetch tasks when workspace or filters change
   useEffect(() => {
@@ -333,6 +355,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         isLoadingMeta,
         error,
         fetchTasks,
+        fetchTaskTypes,
         createTask,
         updateTask,
         deleteTask,

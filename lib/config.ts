@@ -12,6 +12,8 @@ export const STORAGE_KEYS = {
   TOKEN: 'tasker_access_token',
   USER: 'tasker_user',
   API_URL: 'tasker_api_base_url',
+  PERMISSIONS: 'tasker_permissions',
+  LANGUAGE: 'tasker_language',
 } as const;
 
 /**

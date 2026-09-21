@@ -7,6 +7,7 @@ import { Setting, UserSetting } from '@/types/api';
 import { getErrorMessage } from '@/lib/api';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from '@/context/I18nContext';
 import {
   Settings,
   X,
@@ -41,6 +42,7 @@ interface MergedSetting {
 }
 
 export default function SettingsModal({ isOpen, onClose }: Props) {
+  const { t, setLanguage } = useTranslation();
   const { themeMode, setThemeMode } = useTheme();
   const { activeApiUrl } = useAuth();
   const isLocal = activeApiUrl.includes('127.0.0.1') || activeApiUrl.includes('localhost');
@@ -132,6 +134,13 @@ export default function SettingsModal({ isOpen, onClose }: Props) {
             }
           }
 
+          // If changing language, apply immediately for real-time responsiveness
+          if (item.definition.name === 'language') {
+            if (newValue === 'en' || newValue === 'ar') {
+              setLanguage(newValue);
+            }
+          }
+
           return {
             ...item,
             currentValue: newValue,
@@ -171,7 +180,7 @@ export default function SettingsModal({ isOpen, onClose }: Props) {
                   isCustomized: true,
                   isDirty: false,
                   isSaving: false,
-                  successMessage: 'Saved!',
+                  successMessage: t('saved_feedback'),
                 }
               : i
           )
@@ -180,6 +189,12 @@ export default function SettingsModal({ isOpen, onClose }: Props) {
         if (item.definition.name === 'theme_mode') {
           if (item.currentValue === 'light' || item.currentValue === 'dark') {
             setThemeMode(item.currentValue);
+          }
+        }
+
+        if (item.definition.name === 'language') {
+          if (item.currentValue === 'en' || item.currentValue === 'ar') {
+            setLanguage(item.currentValue);
           }
         }
 
@@ -233,7 +248,7 @@ export default function SettingsModal({ isOpen, onClose }: Props) {
                 isCustomized: false,
                 isDirty: false,
                 isResetting: false,
-                successMessage: 'Reset to default!',
+                successMessage: t('reset_feedback'),
               }
             : i
         )
@@ -242,6 +257,11 @@ export default function SettingsModal({ isOpen, onClose }: Props) {
       if (item.definition.name === 'theme_mode') {
         const defaultMode = item.definition.default === 'dark' ? 'dark' : 'light';
         setThemeMode(defaultMode);
+      }
+
+      if (item.definition.name === 'language') {
+        const defaultLang = item.definition.default === 'ar' ? 'ar' : 'en';
+        setLanguage(defaultLang);
       }
 
       setTimeout(() => {
@@ -307,14 +327,14 @@ export default function SettingsModal({ isOpen, onClose }: Props) {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold text-white tracking-wide">
-                  Application Settings
+                  {t('application_settings')}
                 </h2>
                 <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-indigo-950/60 border border-indigo-800/40 text-indigo-300">
-                  User Preferences
+                  {t('user_preferences')}
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                Manage your personalized preferences or keep system defaults
+                {t('manage_preferences_desc')}
               </p>
             </div>
           </div>
@@ -340,7 +360,7 @@ export default function SettingsModal({ isOpen, onClose }: Props) {
               onClick={loadAllSettings}
               className="text-[11px] font-medium text-rose-300 hover:text-white underline"
             >
-              Retry
+              {t('retry')}
             </button>
           </div>
         )}
@@ -350,11 +370,11 @@ export default function SettingsModal({ isOpen, onClose }: Props) {
           {loading ? (
             <div className="py-20 flex flex-col items-center justify-center gap-3 text-slate-400">
               <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
-              <p className="text-xs font-mono">Fetching settings definitions & overrides...</p>
+              <p className="text-xs font-mono">{t('fetching_settings')}</p>
             </div>
           ) : items.length === 0 ? (
             <div className="py-16 text-center text-slate-400">
-              <p className="text-sm">No settings found on this backend.</p>
+              <p className="text-sm">{t('no_settings_found')}</p>
             </div>
           ) : (
             items.map((item) => {
@@ -391,11 +411,11 @@ export default function SettingsModal({ isOpen, onClose }: Props) {
                           {item.isCustomized ? (
                             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-950 border border-indigo-500/40 text-indigo-300 flex items-center gap-1">
                               <Sparkles className="w-2.5 h-2.5 text-indigo-400" />
-                              Customized
+                              {t('customized')}
                             </span>
                           ) : (
                             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-400">
-                              Default ({def.default})
+                              {t('default_value', { default: def.default })}
                             </span>
                           )}
                         </div>
@@ -421,7 +441,7 @@ export default function SettingsModal({ isOpen, onClose }: Props) {
                         ) : (
                           <RotateCcw className="w-3 h-3" />
                         )}
-                        <span>Reset</span>
+                        <span>{t('reset')}</span>
                       </button>
                     )}
                   </div>
@@ -443,7 +463,7 @@ export default function SettingsModal({ isOpen, onClose }: Props) {
                             }`}
                           >
                             <Sun className="w-3.5 h-3.5 text-amber-400" />
-                            <span>Light Mode</span>
+                            <span>{t('light_mode')}</span>
                           </button>
                           <button
                             type="button"
@@ -455,7 +475,7 @@ export default function SettingsModal({ isOpen, onClose }: Props) {
                             }`}
                           >
                             <Moon className="w-3.5 h-3.5" />
-                            <span>Dark Mode</span>
+                            <span>{t('dark_mode')}</span>
                           </button>
                         </div>
                       ) : isLanguage ? (
@@ -504,13 +524,13 @@ export default function SettingsModal({ isOpen, onClose }: Props) {
                             <span
                               className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
                                 item.currentValue === 'true'
-                                  ? 'translate-x-5'
-                                  : 'translate-x-0'
+                                ? 'translate-x-5'
+                                : 'translate-x-0'
                               }`}
                             />
                           </button>
                           <span className="text-xs text-slate-300 font-medium">
-                            {item.currentValue === 'true' ? 'Enabled' : 'Disabled'}
+                            {item.currentValue === 'true' ? t('enabled') : t('disabled')}
                           </span>
                         </div>
                       ) : isNum ? (
@@ -527,7 +547,7 @@ export default function SettingsModal({ isOpen, onClose }: Props) {
                             max="1000"
                           />
                           <span className="text-[11px] text-slate-400">
-                            items per page
+                            {t('items_per_page')}
                           </span>
                         </div>
                       ) : (
@@ -569,7 +589,7 @@ export default function SettingsModal({ isOpen, onClose }: Props) {
                           ) : (
                             <Save className="w-3.5 h-3.5" />
                           )}
-                          <span>Save</span>
+                          <span>{t('save')}</span>
                         </button>
                       )}
                     </div>
@@ -584,14 +604,14 @@ export default function SettingsModal({ isOpen, onClose }: Props) {
         <div className="p-3.5 sm:p-4 px-4 sm:px-6 border-t border-slate-800 bg-slate-900/60 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
           <div className="flex items-center gap-2 truncate max-w-[200px] sm:max-w-none">
             <span className={`w-2 h-2 rounded-full shrink-0 ${isLocal ? 'bg-emerald-400' : 'bg-indigo-400'}`} />
-            <span className="truncate">{isLocal ? 'Local Backend (8000)' : 'Production Cloud API'}</span>
+            <span className="truncate">{isLocal ? t('local_backend') : t('production_api')}</span>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium rounded-xl transition-colors"
           >
-            Done
+            {t('done')}
           </button>
         </div>
       </div>

@@ -27,6 +27,13 @@ export interface User {
   token?: Token;
 }
 
+export interface Permission {
+  id: number;
+  name: string;
+  guard_name: string;
+  name_ar?: string;
+}
+
 export type TaskStage = 'pending' | 'working' | 'completed';
 
 export interface TaskType {

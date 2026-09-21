@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useTasks } from '@/context/TaskContext';
+import { useTranslation } from '@/context/I18nContext';
 import { FolderPlus, X } from 'lucide-react';
 
 interface Props {
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function NewProjectModal({ isOpen, onClose }: Props) {
+  const { t } = useTranslation();
   const { createProject } = useTasks();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -45,11 +47,12 @@ export default function NewProjectModal({ isOpen, onClose }: Props) {
               <FolderPlus className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-semibold text-white">Create New Project</h3>
-              <p className="text-xs text-slate-400">Organize tasks and workspaces</p>
+              <h3 className="font-semibold text-white">{t('create_project_title')}</h3>
+              <p className="text-xs text-slate-400">{t('create_project_desc')}</p>
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
           >
@@ -66,27 +69,27 @@ export default function NewProjectModal({ isOpen, onClose }: Props) {
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div>
             <label className="block text-xs font-medium text-slate-300 mb-1">
-              Project Name *
+              {t('project_name_label')}
             </label>
             <input
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Mobile Application v2"
+              placeholder={t('project_name_placeholder')}
               className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
             />
           </div>
 
           <div>
             <label className="block text-xs font-medium text-slate-300 mb-1">
-              Description (optional)
+              {t('description_label')}
             </label>
             <textarea
               rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Provide a brief summary of this project"
+              placeholder={t('project_desc_placeholder')}
               className="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors resize-none"
             />
           </div>
@@ -97,14 +100,14 @@ export default function NewProjectModal({ isOpen, onClose }: Props) {
               onClick={onClose}
               className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors"
             >
-              Cancel
+              {t('cancel')}
             </button>
             <button
               type="submit"
               disabled={loading || !name.trim()}
               className="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-md shadow-indigo-600/20 disabled:opacity-50 transition-all flex items-center gap-2"
             >
-              {loading ? 'Creating...' : 'Create Project'}
+              {loading ? t('saving') : t('new_project')}
             </button>
           </div>
         </form>
