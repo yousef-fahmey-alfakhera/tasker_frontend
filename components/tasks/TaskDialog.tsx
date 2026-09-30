@@ -19,6 +19,7 @@ import {
   Trash2,
   UploadCloud,
   X,
+  GitFork,
 } from 'lucide-react';
 
 interface Props {
@@ -78,6 +79,7 @@ export default function TaskDialog({
     deleteTask,
     uploadTaskAttachment,
     deleteTaskAttachment,
+    fetchTaskById,
   } = useTasks();
 
   const isEditing = !!taskToEdit;
@@ -101,11 +103,22 @@ export default function TaskDialog({
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
   const [deletingAttachmentId, setDeletingAttachmentId] = useState<number | null>(null);
 
+  // Children / Subtasks state
+  const [children, setChildren] = useState<Task[]>([]);
+  const [isLoadingChildren, setIsLoadingChildren] = useState(false);
+  const [showAddChild, setShowAddChild] = useState(false);
+  const [newChildTitle, setNewChildTitle] = useState('');
+  const [newChildPriority, setNewChildPriority] = useState<TaskPriority>('Normal');
+  const [newChildStatusId, setNewChildStatusId] = useState<number>(1);
+  const [isSubmittingChild, setIsSubmittingChild] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
+    let isCancelled = false;
+
     if (taskToEdit) {
       setTitle(taskToEdit.title || '');
       setDescription(taskToEdit.description || '');
@@ -117,12 +130,38 @@ export default function TaskDialog({
       setStartDate(taskToEdit.start_date ? taskToEdit.start_date.substring(0, 10) : '');
       setDueDate(taskToEdit.due_date ? taskToEdit.due_date.substring(0, 10) : '');
       setExistingAttachments(taskToEdit.attachments || []);
+      setChildren(taskToEdit.children || []);
       setPendingFiles([]);
+      setShowAddChild(false);
+      setNewChildTitle('');
+      setNewChildStatusId(statuses[0]?.id || 1);
+
+      // Requirement: When open the task it gets the children
+      if (isOpen) {
+        setIsLoadingChildren(true);
+        fetchTaskById(taskToEdit.id)
+          .then((freshTask) => {
+            if (!isCancelled && freshTask) {
+              if (freshTask.children) {
+                setChildren(freshTask.children);
+              }
+              if (freshTask.attachments) {
+                setExistingAttachments(freshTask.attachments);
+              }
+            }
+          })
+          .catch((err) => {
+            console.error('Failed to fetch full task with children:', err);
+          })
+          .finally(() => {
+            if (!isCancelled) {
+              setIsLoadingChildren(false);
+            }
+          });
+      }
     } else {
       setTitle('');
       setDescription('');
-      // In quick create mode, status is strictly the first status in the list.
-      // In column create mode, status defaults to the clicked column's status (or first status fallback).
       const defaultStatus = isQuickCreate
         ? statuses[0]?.id || 1
         : initialStatusId || statuses[0]?.id || 1;
@@ -130,16 +169,22 @@ export default function TaskDialog({
       setStatusId(defaultStatus);
       setTaskTypeId(taskTypes[0]?.id || 1);
       setPriority('Normal');
-      // When creating, project and workspace default to the selected project and workspace on screen
       setWorkspaceId(activeWorkspaceId || workspaces[0]?.id || 1);
       setProjectId(activeProjectId || projects[0]?.id || 1);
       setStartDate('');
       setDueDate('');
       setExistingAttachments([]);
       setPendingFiles([]);
+      setChildren([]);
+      setShowAddChild(false);
+      setNewChildTitle('');
     }
     setConfirmDelete(false);
     setError(null);
+
+    return () => {
+      isCancelled = true;
+    };
   }, [
     taskToEdit,
     isOpen,
@@ -151,6 +196,7 @@ export default function TaskDialog({
     taskTypes,
     workspaces,
     projects,
+    fetchTaskById,
   ]);
 
   if (!isOpen) return null;
@@ -197,6 +243,59 @@ export default function TaskDialog({
       setError(err.message || 'Failed to delete attachment');
     } finally {
       setDeletingAttachmentId(null);
+    }
+  };
+
+  const handleAddChildTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!taskToEdit || !newChildTitle.trim() || isReadOnly) return;
+    setIsSubmittingChild(true);
+    setError(null);
+    try {
+      const createdChild = await createTask({
+        title: newChildTitle.trim(),
+        project_id: taskToEdit.project_id,
+        workspace_id: taskToEdit.workspace_id,
+        status_id: newChildStatusId || statuses[0]?.id || 1,
+        task_type_id: taskTypeId || taskTypes[0]?.id || 1,
+        priority: newChildPriority,
+        parent_task_id: taskToEdit.id,
+      });
+      setChildren((prev) => [...prev, createdChild]);
+      setNewChildTitle('');
+      setShowAddChild(false);
+      // Re-fetch parent to ensure children list and relations are refreshed
+      const freshParent = await fetchTaskById(taskToEdit.id);
+      if (freshParent?.children) {
+        setChildren(freshParent.children);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to create subtask');
+    } finally {
+      setIsSubmittingChild(false);
+    }
+  };
+
+  const handleOpenChildTask = async (child: Task) => {
+    setIsLoadingChildren(true);
+    try {
+      const freshChild = await fetchTaskById(child.id);
+      if (freshChild) {
+        setTitle(freshChild.title || '');
+        setDescription(freshChild.description || '');
+        setStatusId(freshChild.status_id);
+        setPriority(freshChild.priority || 'Normal');
+        setWorkspaceId(freshChild.workspace_id);
+        setProjectId(freshChild.project_id);
+        setStartDate(freshChild.start_date ? freshChild.start_date.substring(0, 10) : '');
+        setDueDate(freshChild.due_date ? freshChild.due_date.substring(0, 10) : '');
+        setExistingAttachments(freshChild.attachments || []);
+        setChildren(freshChild.children || []);
+      }
+    } catch (err) {
+      console.error('Failed to open child task:', err);
+    } finally {
+      setIsLoadingChildren(false);
     }
   };
 
@@ -533,6 +632,158 @@ export default function TaskDialog({
                 </div>
               </div>
             </>
+          )}
+
+          {/* Requirement: Children / Subtasks Section - Loaded on open */}
+          {isEditing && taskToEdit && (
+            <div className="pt-3 border-t border-slate-800/80">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
+                  <GitFork className="w-3.5 h-3.5 text-indigo-400 rotate-180" />
+                  <span>{t('child_tasks')}</span>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    ({children.length})
+                  </span>
+                </label>
+
+                {!isReadOnly && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAddChild(!showAddChild)}
+                    className="inline-flex items-center gap-1 text-[11px] font-medium text-indigo-400 hover:text-indigo-300 px-2.5 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 transition-all shadow-sm"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>{t('add_child_task')}</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Inline Subtask Create Form */}
+              {showAddChild && (
+                <div className="mb-3 p-3 bg-slate-950/90 border border-indigo-500/30 rounded-xl space-y-2.5 shadow-lg">
+                  <div className="text-xs font-semibold text-white flex items-center gap-1.5">
+                    <GitFork className="w-3 h-3 text-indigo-400 rotate-180" />
+                    <span>{t('add_child_task')}</span>
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    autoFocus
+                    value={newChildTitle}
+                    onChange={(e) => setNewChildTitle(e.target.value)}
+                    placeholder={t('child_task_title_placeholder')}
+                    className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] text-slate-400 mb-0.5">{t('status')}</label>
+                      <select
+                        value={newChildStatusId}
+                        onChange={(e) => setNewChildStatusId(Number(e.target.value))}
+                        className="w-full px-2 py-1 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none"
+                      >
+                        {statuses.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-slate-400 mb-0.5">{t('priority')}</label>
+                      <select
+                        value={newChildPriority}
+                        onChange={(e) => setNewChildPriority(e.target.value as TaskPriority)}
+                        className="w-full px-2 py-1 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none"
+                      >
+                        {PRIORITIES.map((p) => (
+                          <option key={p} value={p}>
+                            {t(`priority_${p.toLowerCase()}` as any) || p}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-end gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAddChild(false);
+                        setNewChildTitle('');
+                      }}
+                      className="px-2.5 py-1 text-xs text-slate-400 hover:text-white"
+                    >
+                      {t('cancel')}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isSubmittingChild || !newChildTitle.trim()}
+                      onClick={handleAddChildTask}
+                      className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-medium rounded-lg shadow-sm flex items-center gap-1.5"
+                    >
+                      {isSubmittingChild && <Loader2 className="w-3 h-3 animate-spin" />}
+                      <span>{isSubmittingChild ? t('creating_child_task') : t('save')}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Children Loading State */}
+              {isLoadingChildren && (
+                <div className="p-3 text-center text-xs text-indigo-400 flex items-center justify-center gap-2 bg-slate-950/40 rounded-xl border border-slate-800/60">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>{t('loading_task_details')}</span>
+                </div>
+              )}
+
+              {/* Children List */}
+              {!isLoadingChildren && (
+                <div className="space-y-1.5 max-h-44 overflow-y-auto pr-1">
+                  {children.length === 0 ? (
+                    <div className="p-3 text-center text-xs text-slate-500 bg-slate-950/40 rounded-xl border border-slate-800/60">
+                      {t('no_child_tasks')}
+                    </div>
+                  ) : (
+                    children.map((child) => (
+                      <div
+                        key={child.id}
+                        className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-800/80 hover:border-slate-700 text-xs transition-colors"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ backgroundColor: child.status?.color || '#818cf8' }}
+                          />
+                          <span className="font-mono text-[10px] text-slate-500 shrink-0">#{child.id}</span>
+                          <span className="font-medium text-white truncate">{child.title}</span>
+                          {child.status && (
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400 shrink-0 hidden sm:inline">
+                              {child.status.name}
+                            </span>
+                          )}
+                          {child.priority && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded font-mono text-slate-400 bg-slate-900/60 border border-slate-800 shrink-0 hidden sm:inline">
+                              {child.priority}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenChildTask(child)}
+                            className="px-2 py-0.5 rounded-md text-[11px] text-indigo-400 hover:text-indigo-300 hover:bg-indigo-950/40 border border-indigo-500/20 transition-colors"
+                            title={t('open_child_task')}
+                          >
+                            {t('open_child_task')}
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
           )}
 
           {/* Attachments Section */}

@@ -18,6 +18,15 @@ export const tasksService = {
     if (params?.project_id) cleanParams.project_id = params.project_id;
     if (params?.status_id) cleanParams.status_id = params.status_id;
     if (params?.priority) cleanParams.priority = params.priority;
+    if (params?.page) cleanParams.page = params.page;
+    if (params?.per_page) cleanParams.per_page = params.per_page;
+    if (params?.search) cleanParams.search = params.search;
+    if (params?.parent_task_id !== undefined && params?.parent_task_id !== null) {
+      cleanParams.parent_task_id = params.parent_task_id;
+    }
+    if (params?.parent_id !== undefined && params?.parent_id !== null) {
+      cleanParams.parent_id = params.parent_id;
+    }
 
     const response = await apiClient.get<ApiResponse<Task[]>>('/tasks', {
       params: cleanParams,
@@ -48,6 +57,9 @@ export const tasksService = {
         formData.append('task_type_id', String(payload.task_type_id));
       }
       formData.append('title', payload.title);
+      if (payload.parent_task_id) {
+        formData.append('parent_task_id', String(payload.parent_task_id));
+      }
       if (payload.description) {
         formData.append('description', payload.description);
       }

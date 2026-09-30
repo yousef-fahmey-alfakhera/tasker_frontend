@@ -98,11 +98,21 @@ export default function AuthScreen() {
           {/* Language Switcher */}
           <button
             type="button"
-            onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
+            onClick={() => {
+              if (language === 'en') setLanguage('ar');
+              else if (language === 'ar') setLanguage('ur');
+              else setLanguage('en');
+            }}
             className="px-2.5 py-1 bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl text-slate-300 hover:text-white transition-colors flex items-center gap-1.5 font-medium text-xs"
           >
             <Languages className="w-3.5 h-3.5 text-indigo-400" />
-            <span>{language === 'en' ? 'العربية' : 'English'}</span>
+            <span>
+              {language === 'en'
+                ? 'العربية'
+                : language === 'ar'
+                ? 'اردو'
+                : 'English'}
+            </span>
           </button>
 
           {isDev && (
@@ -221,18 +231,18 @@ export default function AuthScreen() {
 
           <div>
             <label className="block text-xs font-medium text-slate-300 mb-1.5">
-              {t('email_address')}
+              {isRegister ? t('email_address') : t('email_or_code')}
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                 <Mail className="w-4 h-4" />
               </div>
               <input
-                type="email"
+                type={isRegister ? 'email' : 'text'}
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@tasker.test"
+                placeholder={isRegister ? 'name@tasker.test' : t('email_or_code_placeholder')}
                 className="w-full pl-9 pr-3.5 py-2.5 bg-slate-950/70 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
               />
             </div>

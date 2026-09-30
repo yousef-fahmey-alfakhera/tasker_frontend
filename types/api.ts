@@ -1,7 +1,17 @@
+export interface PaginationMeta {
+  current_page: number;
+  per_page: number;
+  total: number;
+  last_page: number;
+  from?: number | null;
+  to?: number | null;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   message: string;
   data: T;
+  pagination?: PaginationMeta;
   errors?: Record<string, string[]>;
 }
 
@@ -20,6 +30,9 @@ export interface User {
   id: number;
   name: string;
   email: string;
+  code?: string | null;
+  project_id?: number | null;
+  project?: Project | null;
   roles?: string[];
   email_verified_at?: string | null;
   created_at?: string;
@@ -82,9 +95,21 @@ export interface Task {
   position?: number;
   parent_task_id?: number | null;
   created_by?: number;
+  creator?: {
+    id: number;
+    name: string;
+    email: string;
+  };
   fixed_by?: number | null;
+  fixed_by_user?: {
+    id: number;
+    name: string;
+    email: string;
+  } | null;
   project_id: number;
+  project?: Project;
   workspace_id: number;
+  workspace?: Workspace;
   status_id: number;
   status?: TaskStatus;
   task_type_id?: number;
@@ -92,6 +117,7 @@ export interface Task {
   respnsapity?: number;
   responsibility?: number;
   attachments?: Attachment[];
+  children?: Task[];
   start_date?: string | null;
   due_date?: string | null;
   working_at?: string | null;
@@ -100,6 +126,7 @@ export interface Task {
   subtasks_count?: number;
   created_at?: string;
   updated_at?: string;
+  deleted_at?: string | null;
 }
 
 export interface WorkspaceUser {
@@ -132,7 +159,8 @@ export interface Project {
 
 // Request Payloads
 export interface LoginPayload {
-  email: string;
+  email?: string;
+  code?: string;
   password: string;
 }
 
@@ -157,6 +185,7 @@ export interface CreateTaskPayload {
   description?: string;
   priority?: TaskPriority;
   position?: number;
+  parent_task_id?: number | null;
   start_date?: string;
   due_date?: string;
   attachments?: File[];
@@ -171,6 +200,7 @@ export interface UpdateTaskPayload {
   description?: string;
   priority?: TaskPriority;
   position?: number;
+  parent_task_id?: number | null;
   fixed_by?: number;
   start_date?: string;
   due_date?: string;
@@ -182,6 +212,10 @@ export interface TaskFilterParams {
   status_id?: number;
   priority?: TaskPriority;
   search?: string;
+  page?: number;
+  per_page?: number;
+  parent_task_id?: number | null;
+  parent_id?: number | null;
 }
 
 // Settings & User Settings Types

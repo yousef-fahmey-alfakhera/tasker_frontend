@@ -14,7 +14,9 @@ import {
   Inbox,
   Sparkles,
   Paperclip,
+  GitFork,
 } from 'lucide-react';
+import Pagination from '@/components/common/Pagination';
 
 interface Props {
   onEditTask: (task: Task) => void;
@@ -39,6 +41,11 @@ export default function TaskListView({ onEditTask, onAddTask }: Props) {
     updateTask,
     deleteTask,
     searchQuery,
+    pagination,
+    page,
+    perPage,
+    setPage,
+    setPerPage,
   } = useTasks();
 
   const filteredTasks = tasks.filter((tItem) => {
@@ -51,7 +58,7 @@ export default function TaskListView({ onEditTask, onAddTask }: Props) {
   });
 
   const getWorkspaceName = (id: number) => {
-    return workspaces.find((w) => w.id === id)?.name || `Workspace #${id}`;
+    return workspaces.find((w) => w.id === id)?.name || `${t('workspace')} #${id}`;
   };
 
   const getProjectName = (id: number) => {
@@ -136,15 +143,31 @@ export default function TaskListView({ onEditTask, onAddTask }: Props) {
 
                         {/* Title & Type */}
                         <td className="py-3 px-4 max-w-xs">
-                          <div className="font-medium text-white group-hover:text-indigo-300 transition-colors flex items-center gap-2">
-                            <span className="truncate">{task.title}</span>
-                            {isResponsible && (
-                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 flex items-center gap-1 shrink-0">
-                                <Sparkles className="w-2.5 h-2.5" />
-                                {t('responsible')}
-                              </span>
-                            )}
-                          </div>
+                          {(() => {
+                            const hasChildren =
+                              (task.children && task.children.length > 0) ||
+                              (task.subtasks_count !== undefined && task.subtasks_count > 0);
+                            const childrenCount =
+                              task.children?.length ?? task.subtasks_count ?? 0;
+
+                            return (
+                              <div className="font-medium text-white group-hover:text-indigo-300 transition-colors flex items-center gap-2 flex-wrap">
+                                <span className="truncate">{task.title}</span>
+                                {hasChildren && (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-indigo-950/70 border border-indigo-500/30 text-indigo-300 shrink-0">
+                                    <GitFork className="w-2.5 h-2.5 text-indigo-400 rotate-180" />
+                                    <span>{t('has_children_badge', { count: childrenCount })}</span>
+                                  </span>
+                                )}
+                                {isResponsible && (
+                                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 flex items-center gap-1 shrink-0">
+                                    <Sparkles className="w-2.5 h-2.5" />
+                                    {t('responsible')}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
                           {task.description && (
                             <p className="text-slate-500 truncate text-[11px] mt-0.5 max-w-sm">
                               {task.description}
@@ -253,11 +276,19 @@ export default function TaskListView({ onEditTask, onAddTask }: Props) {
                 const isResponsible =
                   task.respnsapity === 1 || task.responsibility === 1;
 
+                const hasChildren =
+                  (task.children && task.children.length > 0) ||
+                  (task.subtasks_count !== undefined && task.subtasks_count > 0);
+                const childrenCount =
+                  task.children?.length ?? task.subtasks_count ?? 0;
+
                 return (
                   <div
                     key={task.id}
                     onClick={() => onEditTask(task)}
                     className={`p-3 sm:p-4 space-y-2.5 transition-colors cursor-pointer ${
+                      hasChildren ? 'border-b-[4px] border-b-indigo-500/70' : ''
+                    } ${
                       isResponsible ? 'bg-indigo-950/20' : 'hover:bg-slate-800/20'
                     }`}
                   >
@@ -317,6 +348,35 @@ export default function TaskListView({ onEditTask, onAddTask }: Props) {
                       )}
                     </div>
 
+                    {/* Requirement: Children / Subtasks Header Indicator on Mobile Card */}
+                    {hasChildren && (
+                      <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs">
+                        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-indigo-950/70 border border-indigo-500/30 text-indigo-300 font-medium text-[11px] shadow-sm">
+                          <GitFork className="w-3 h-3 text-indigo-400 rotate-180" />
+                          <span>{t('has_children_badge', { count: childrenCount })}</span>
+                        </div>
+                        {task.children && task.children.length > 0 && (
+                          <div
+                            className="flex items-center -space-x-1 rtl:space-x-reverse"
+                            title={`${childrenCount} subtasks`}
+                          >
+                            {task.children.slice(0, 4).map((child) => (
+                              <span
+                                key={child.id}
+                                className="w-2.5 h-2.5 rounded-full ring-1 ring-slate-950"
+                                style={{ backgroundColor: child.status?.color || '#818cf8' }}
+                              />
+                            ))}
+                            {task.children.length > 4 && (
+                              <span className="text-[10px] font-mono text-slate-400 pl-1">
+                                +{task.children.length - 4}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Bottom Row: Status Selector & Actions */}
                     <div
                       className="pt-2 border-t border-slate-800/60 flex items-center justify-between gap-2"
@@ -361,6 +421,16 @@ export default function TaskListView({ onEditTask, onAddTask }: Props) {
                 );
               })}
             </div>
+
+            {/* Pagination Toolbar */}
+            <Pagination
+              pagination={pagination}
+              page={page}
+              perPage={perPage}
+              onPageChange={setPage}
+              onPerPageChange={setPerPage}
+              totalFallback={tasks.length}
+            />
           </>
         )}
       </div>

@@ -13,7 +13,9 @@ import {
   Inbox,
   Sparkles,
   Paperclip,
+  GitFork,
 } from 'lucide-react';
+import Pagination from '@/components/common/Pagination';
 
 interface Props {
   onEditTask: (task: Task) => void;
@@ -30,7 +32,17 @@ const PRIORITY_BADGES: Record<TaskPriority, { bg: string; text: string; dot: str
 export default function TaskBoardView({ onEditTask, onAddTask }: Props) {
   const { t } = useTranslation();
   const { canCreateTask } = useAuth();
-  const { tasks, statuses, updateTask, searchQuery } = useTasks();
+  const {
+    tasks,
+    statuses,
+    updateTask,
+    searchQuery,
+    pagination,
+    page,
+    perPage,
+    setPage,
+    setPerPage,
+  } = useTasks();
 
   // Filter tasks by search query if any
   const filteredTasks = tasks.filter((tItem) => {
@@ -173,11 +185,21 @@ export default function TaskBoardView({ onEditTask, onAddTask }: Props) {
                       const isResponsible =
                         task.respnsapity === 1 || task.responsibility === 1;
 
+                      const hasChildren =
+                        (task.children && task.children.length > 0) ||
+                        (task.subtasks_count !== undefined && task.subtasks_count > 0);
+                      const childrenCount =
+                        task.children?.length ?? task.subtasks_count ?? 0;
+
                       return (
                         <div
                           key={task.id}
                           onClick={() => onEditTask(task)}
                           className={`group rounded-xl p-4 cursor-pointer transition-all relative overflow-hidden ${
+                            hasChildren
+                              ? 'border-b-[5px] border-b-indigo-500/70 shadow-md shadow-indigo-950/30'
+                              : ''
+                          } ${
                             isResponsible
                               ? 'bg-slate-950 border-2 border-indigo-400 shadow-[0_0_18px_rgba(99,102,241,0.35)] ring-1 ring-indigo-300/40 hover:border-indigo-300'
                               : 'bg-slate-950/70 hover:bg-slate-950 border border-slate-800/80 hover:border-indigo-500/40 shadow-sm hover:shadow-md'
@@ -281,6 +303,35 @@ export default function TaskBoardView({ onEditTask, onAddTask }: Props) {
                               </select>
                             </div>
                           </div>
+
+                          {/* Requirement: Children / Subtasks Header Indicator on Card */}
+                          {hasChildren && (
+                            <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs pl-1">
+                              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-indigo-950/70 border border-indigo-500/30 text-indigo-300 font-medium text-[11px] shadow-sm">
+                                <GitFork className="w-3 h-3 text-indigo-400 rotate-180" />
+                                <span>{t('has_children_badge', { count: childrenCount })}</span>
+                              </div>
+                              {task.children && task.children.length > 0 && (
+                                <div
+                                  className="flex items-center -space-x-1 rtl:space-x-reverse"
+                                  title={`${childrenCount} subtasks`}
+                                >
+                                  {task.children.slice(0, 4).map((child) => (
+                                    <span
+                                      key={child.id}
+                                      className="w-2.5 h-2.5 rounded-full ring-1 ring-slate-950"
+                                      style={{ backgroundColor: child.status?.color || '#818cf8' }}
+                                    />
+                                  ))}
+                                  {task.children.length > 4 && (
+                                    <span className="text-[10px] font-mono text-slate-400 pl-1">
+                                      +{task.children.length - 4}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       );
                     })
@@ -291,6 +342,16 @@ export default function TaskBoardView({ onEditTask, onAddTask }: Props) {
           })}
         </div>
       </div>
+
+      {/* Pagination Toolbar */}
+      <Pagination
+        pagination={pagination}
+        page={page}
+        perPage={perPage}
+        onPageChange={setPage}
+        onPerPageChange={setPerPage}
+        totalFallback={tasks.length}
+      />
     </div>
   );
 }

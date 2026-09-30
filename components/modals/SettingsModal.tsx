@@ -136,7 +136,7 @@ export default function SettingsModal({ isOpen, onClose }: Props) {
 
           // If changing language, apply immediately for real-time responsiveness
           if (item.definition.name === 'language') {
-            if (newValue === 'en' || newValue === 'ar') {
+            if (newValue === 'en' || newValue === 'ar' || newValue === 'ur') {
               setLanguage(newValue);
             }
           }
@@ -193,7 +193,7 @@ export default function SettingsModal({ isOpen, onClose }: Props) {
         }
 
         if (item.definition.name === 'language') {
-          if (item.currentValue === 'en' || item.currentValue === 'ar') {
+          if (item.currentValue === 'en' || item.currentValue === 'ar' || item.currentValue === 'ur') {
             setLanguage(item.currentValue);
           }
         }
@@ -260,7 +260,7 @@ export default function SettingsModal({ isOpen, onClose }: Props) {
       }
 
       if (item.definition.name === 'language') {
-        const defaultLang = item.definition.default === 'ar' ? 'ar' : 'en';
+        const defaultLang = item.definition.default === 'ar' ? 'ar' : item.definition.default === 'ur' ? 'ur' : 'en';
         setLanguage(defaultLang);
       }
 
@@ -502,6 +502,17 @@ export default function SettingsModal({ isOpen, onClose }: Props) {
                             }`}
                           >
                             العربية (ar)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleValueChange(def.id, 'ur')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                              item.currentValue === 'ur'
+                                ? 'bg-indigo-600 text-white font-semibold'
+                                : 'text-slate-400 hover:text-slate-200'
+                            }`}
+                          >
+                            اردو (ur)
                           </button>
                         </div>
                       ) : isBool ? (

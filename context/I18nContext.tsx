@@ -29,10 +29,11 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   // Apply html lang and dir attributes
   const applyDirection = useCallback((lang: SupportedLanguage) => {
     if (typeof document !== 'undefined') {
-      const dir = lang === 'ar' ? 'rtl' : 'ltr';
+      const isRtlLang = lang === 'ar' || lang === 'ur';
+      const dir = isRtlLang ? 'rtl' : 'ltr';
       document.documentElement.setAttribute('lang', lang);
       document.documentElement.setAttribute('dir', dir);
-      if (lang === 'ar') {
+      if (isRtlLang) {
         document.documentElement.classList.add('rtl');
       } else {
         document.documentElement.classList.remove('rtl');
@@ -44,7 +45,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedLang = localStorage.getItem(STORAGE_KEYS.LANGUAGE) as SupportedLanguage | null;
-      if (storedLang === 'ar' || storedLang === 'en') {
+      if (storedLang === 'ar' || storedLang === 'en' || storedLang === 'ur') {
         setLanguageState(storedLang);
         applyDirection(storedLang);
       } else {
@@ -65,7 +66,10 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
           const langSetting = res.data.find(
             (s) => s.setting_name === 'language' || s.setting?.name === 'language'
           );
-          if (langSetting && (langSetting.value === 'ar' || langSetting.value === 'en')) {
+          if (
+            langSetting &&
+            (langSetting.value === 'ar' || langSetting.value === 'en' || langSetting.value === 'ur')
+          ) {
             if (isMounted) {
               const backendLang = langSetting.value as SupportedLanguage;
               setLanguageState(backendLang);
@@ -116,7 +120,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     [language]
   );
 
-  const isRtl = language === 'ar';
+  const isRtl = language === 'ar' || language === 'ur';
   const dir = isRtl ? 'rtl' : 'ltr';
 
   return (

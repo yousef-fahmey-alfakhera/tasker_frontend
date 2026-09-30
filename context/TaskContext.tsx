@@ -10,6 +10,7 @@ import React, {
 import {
   Attachment,
   CreateTaskPayload,
+  PaginationMeta,
   Project,
   Task,
   TaskPriority,
@@ -38,8 +39,15 @@ interface TaskContextType {
   isLoadingTasks: boolean;
   isLoadingMeta: boolean;
   error: string | null;
+  // Pagination
+  pagination: PaginationMeta | null;
+  page: number;
+  perPage: number;
+  setPage: (page: number) => void;
+  setPerPage: (perPage: number) => void;
   // Actions
   fetchTasks: () => Promise<void>;
+  fetchTaskById: (id: number) => Promise<Task>;
   fetchTaskTypes: (projectId?: number | null) => Promise<void>;
   createTask: (payload: CreateTaskPayload) => Promise<Task>;
   updateTask: (id: number, payload: UpdateTaskPayload) => Promise<Task>;
@@ -77,9 +85,27 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [activePriority, setActivePriority] = useState<TaskPriority | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  // Pagination state
+  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
+  const [page, setPage] = useState<number>(1);
+  const [perPage, setPerPage] = useState<number>(10);
+
   const [isLoadingTasks, setIsLoadingTasks] = useState<boolean>(false);
   const [isLoadingMeta, setIsLoadingMeta] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch a single task by ID with full children relations
+  const fetchTaskById = useCallback(async (id: number): Promise<Task> => {
+    const res = await tasksService.getTask(id);
+    if (res.success && res.data) {
+      const fetchedTask = res.data;
+      setTasks((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, ...fetchedTask } : t))
+      );
+      return fetchedTask;
+    }
+    throw new Error(res.message || 'Failed to fetch task');
+  }, []);
 
   // Fetch task types filtered by active project_id
   const fetchTaskTypes = useCallback(async (projectId?: number | null) => {
@@ -133,21 +159,40 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, activeWorkspaceId, activeProjectId]);
 
-  // Refetch tasks with current filters
+  // Reset page to 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [activeWorkspaceId, activeProjectId, activeStatusId, activePriority, searchQuery]);
+
+  // Refetch tasks with current filters & pagination
   const fetchTasks = useCallback(async () => {
     if (!isAuthenticated) return;
     setIsLoadingTasks(true);
     setError(null);
     try {
-      const params: Record<string, any> = {};
+      const params: Record<string, any> = {
+        page,
+        per_page: perPage,
+      };
       if (activeWorkspaceId) params.workspace_id = activeWorkspaceId;
       if (activeProjectId) params.project_id = activeProjectId;
       if (activeStatusId) params.status_id = activeStatusId;
       if (activePriority) params.priority = activePriority;
+      if (searchQuery.trim()) params.search = searchQuery.trim();
 
       const res = await tasksService.getTasks(params);
       if (res.success && Array.isArray(res.data)) {
         setTasks(res.data);
+        if (res.pagination) {
+          setPagination(res.pagination);
+        } else {
+          setPagination({
+            current_page: page,
+            per_page: perPage,
+            total: res.data.length,
+            last_page: Math.ceil(res.data.length / perPage) || 1,
+          });
+        }
       }
     } catch (err) {
       const msg = getErrorMessage(err);
@@ -155,7 +200,16 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoadingTasks(false);
     }
-  }, [isAuthenticated, activeWorkspaceId, activeProjectId, activeStatusId, activePriority]);
+  }, [
+    isAuthenticated,
+    activeWorkspaceId,
+    activeProjectId,
+    activeStatusId,
+    activePriority,
+    searchQuery,
+    page,
+    perPage,
+  ]);
 
   // Refetch metadata and tasks when authentication or active API URL changes
   useEffect(() => {
@@ -169,6 +223,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       setProjects([]);
       setActiveWorkspaceId(null);
       setActiveProjectId(null);
+      setPagination(null);
     }
   }, [isAuthenticated, activeApiUrl, fetchMetadata]);
 
@@ -179,12 +234,12 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, activeProjectId, fetchTaskTypes]);
 
-  // Refetch tasks when workspace or filters change
+  // Refetch tasks when workspace, filters, or pagination change
   useEffect(() => {
     if (isAuthenticated) {
       fetchTasks();
     }
-  }, [isAuthenticated, activeWorkspaceId, activeProjectId, activeStatusId, activePriority, fetchTasks]);
+  }, [isAuthenticated, fetchTasks]);
 
   const createTask = async (payload: CreateTaskPayload): Promise<Task> => {
     setError(null);
@@ -354,7 +409,13 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         isLoadingTasks,
         isLoadingMeta,
         error,
+        pagination,
+        page,
+        perPage,
+        setPage,
+        setPerPage,
         fetchTasks,
+        fetchTaskById,
         fetchTaskTypes,
         createTask,
         updateTask,

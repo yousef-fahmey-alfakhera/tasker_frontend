@@ -27,16 +27,16 @@ interface Props {
   viewMode: 'board' | 'list';
   onToggleViewMode: (mode: 'board' | 'list') => void;
   onOpenNewTask: (isQuickCreate?: boolean) => void;
-  onOpenNewProject: () => void;
-  onOpenNewWorkspace: () => void;
+  onOpenNewProject?: () => void;
+  onOpenNewWorkspace?: () => void;
 }
 
 export default function AppHeader({
   viewMode,
   onToggleViewMode,
   onOpenNewTask,
-  onOpenNewProject,
-  onOpenNewWorkspace,
+  onOpenNewProject: _onOpenNewProject,
+  onOpenNewWorkspace: _onOpenNewWorkspace,
 }: Props) {
   const { t, language, setLanguage } = useTranslation();
   const { user, logout, activeApiUrl, switchApiUrl } = useAuth();
@@ -71,7 +71,9 @@ export default function AppHeader({
     workspaces.find((w) => w.id === activeWorkspaceId)?.name || t('all_workspaces');
 
   const handleToggleLanguage = () => {
-    setLanguage(language === 'en' ? 'ar' : 'en');
+    if (language === 'en') setLanguage('ar');
+    else if (language === 'ar') setLanguage('ur');
+    else setLanguage('en');
   };
 
   return (
@@ -113,14 +115,6 @@ export default function AppHeader({
                 </option>
               ))}
             </select>
-            <button
-              type="button"
-              onClick={onOpenNewProject}
-              className="p-1.5 text-slate-400 hover:text-indigo-400 hover:bg-slate-800 rounded-lg transition-colors"
-              title={t('new_project')}
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </button>
           </div>
 
           {/* Desktop Workspace dropdown */}
@@ -138,14 +132,6 @@ export default function AppHeader({
                 </option>
               ))}
             </select>
-            <button
-              type="button"
-              onClick={onOpenNewWorkspace}
-              className="p-1.5 text-slate-400 hover:text-violet-400 hover:bg-slate-800 rounded-lg transition-colors"
-              title={t('new_workspace')}
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </button>
           </div>
         </div>
 
@@ -303,11 +289,13 @@ export default function AppHeader({
             type="button"
             onClick={handleToggleLanguage}
             className="px-2 sm:px-2.5 py-1.5 rounded-xl border border-slate-800 hover:border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white transition-all flex items-center gap-1.5 shrink-0 text-xs font-medium"
-            title={`Switch to ${language === 'en' ? 'Arabic (العربية)' : 'English'}`}
+            title={`Language: ${language === 'en' ? 'English' : language === 'ar' ? 'العربية' : 'اردو'}`}
             aria-label="Toggle language"
           >
             <Languages className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="font-mono">{language === 'en' ? 'عربي' : 'EN'}</span>
+            <span className="font-mono">
+              {language === 'en' ? 'EN' : language === 'ar' ? 'عربي' : 'اردو'}
+            </span>
           </button>
 
           {/* Requirement 1 & 2: Top Right "New Task" Button triggers Quick Create (isQuickCreate: true) */}
@@ -346,7 +334,14 @@ export default function AppHeader({
                 >
                   <div className="flex items-center gap-2">
                     <Languages className="w-3.5 h-3.5 text-purple-400" />
-                    <span>{t('language')}: {language === 'en' ? 'English' : 'العربية'}</span>
+                    <span>
+                      {t('language')}:{' '}
+                      {language === 'en'
+                        ? 'English'
+                        : language === 'ar'
+                        ? 'العربية'
+                        : 'اردو'}
+                    </span>
                   </div>
                   <span className="text-[10px] text-indigo-400 font-mono">{t('switch')}</span>
                 </button>
@@ -448,16 +443,6 @@ export default function AppHeader({
             <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
               <div className="flex items-center justify-between mb-1.5 text-xs text-slate-400">
                 <span className="font-medium">{t('project')}</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    onOpenNewProject();
-                  }}
-                  className="text-indigo-400 hover:text-indigo-300 flex items-center gap-1 text-[11px]"
-                >
-                  <Plus className="w-3 h-3" /> {t('new_project')}
-                </button>
               </div>
               <select
                 value={activeProjectId || ''}
@@ -479,16 +464,6 @@ export default function AppHeader({
             <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
               <div className="flex items-center justify-between mb-1.5 text-xs text-slate-400">
                 <span className="font-medium">{t('workspace')}</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    onOpenNewWorkspace();
-                  }}
-                  className="text-violet-400 hover:text-violet-300 flex items-center gap-1 text-[11px]"
-                >
-                  <Plus className="w-3 h-3" /> {t('new_workspace')}
-                </button>
               </div>
               <select
                 value={activeWorkspaceId || ''}

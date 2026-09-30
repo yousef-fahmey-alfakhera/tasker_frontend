@@ -1,11 +1,13 @@
 import { en, TranslationKey } from './translations/en';
 import { ar } from './translations/ar';
+import { ur } from './translations/ur';
 
-export type SupportedLanguage = 'en' | 'ar';
+export type SupportedLanguage = 'en' | 'ar' | 'ur';
 
 export const translations: Record<SupportedLanguage, Record<TranslationKey, string>> = {
   en,
   ar,
+  ur,
 };
 
 export function translate(
@@ -22,5 +24,5 @@ export function translate(
   return text;
 }
 
-export { en, ar };
+export { en, ar, ur };
 export type { TranslationKey };
