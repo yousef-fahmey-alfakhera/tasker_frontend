@@ -112,7 +112,7 @@ function TaskerContent() {
         ) : (
           <TaskListView
             onEditTask={handleEditTask}
-            onAddTask={() => handleOpenNewTask(undefined, false)}
+            onAddTask={(statusId) => handleOpenNewTask(statusId, false)}
           />
         )}
       </main>

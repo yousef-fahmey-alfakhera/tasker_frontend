@@ -12,6 +12,7 @@ import {
   CreateTaskPayload,
   PaginationMeta,
   Project,
+  StatusTasksState,
   Task,
   TaskPriority,
   TaskStatus,
@@ -39,7 +40,12 @@ interface TaskContextType {
   isLoadingTasks: boolean;
   isLoadingMeta: boolean;
   error: string | null;
-  // Pagination
+  // Per-status tasks & pagination (infinite scroll)
+  statusTasksMap: Record<number, StatusTasksState>;
+  loadMoreForStatus: (statusId: number) => Promise<void>;
+  fetchStatusTasks: (statusId: number, pageToFetch?: number, reset?: boolean) => Promise<void>;
+  reloadAllStatusTasks: () => Promise<void>;
+  // Global Pagination
   pagination: PaginationMeta | null;
   page: number;
   perPage: number;
@@ -93,6 +99,9 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [isLoadingTasks, setIsLoadingTasks] = useState<boolean>(false);
   const [isLoadingMeta, setIsLoadingMeta] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Per-status tasks & pagination map
+  const [statusTasksMap, setStatusTasksMap] = useState<Record<number, StatusTasksState>>({});
 
   // Fetch a single task by ID with full children relations
   const fetchTaskById = useCallback(async (id: number): Promise<Task> => {
@@ -241,13 +250,144 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, fetchTasks]);
 
+  // Fetch tasks for a specific status with pagination
+  const fetchStatusTasks = useCallback(
+    async (statusId: number, pageToFetch: number = 1, reset: boolean = false) => {
+      if (!isAuthenticated) return;
+
+      setStatusTasksMap((prev) => {
+        const current = prev[statusId] || {
+          tasks: [],
+          page: 1,
+          hasMore: true,
+          isLoading: false,
+          isLoadingMore: false,
+          total: 0,
+        };
+        return {
+          ...prev,
+          [statusId]: {
+            ...current,
+            isLoading: pageToFetch === 1 && (reset || current.tasks.length === 0),
+            isLoadingMore: pageToFetch > 1,
+            error: null,
+          },
+        };
+      });
+
+      try {
+        const params: Record<string, any> = {
+          status_id: statusId,
+          status_is: statusId,
+          page: pageToFetch,
+          per_page: 10,
+        };
+        if (activeWorkspaceId) params.workspace_id = activeWorkspaceId;
+        if (activeProjectId) params.project_id = activeProjectId;
+        if (activePriority) params.priority = activePriority;
+        if (searchQuery.trim()) params.search = searchQuery.trim();
+
+        const res = await tasksService.getTasks(params);
+        if (res.success && Array.isArray(res.data)) {
+          const newTasks = res.data;
+          const paginationMeta = res.pagination;
+          const total = paginationMeta?.total ?? newTasks.length;
+          const lastPage = paginationMeta?.last_page ?? 1;
+          const hasMore = pageToFetch < lastPage;
+
+          setStatusTasksMap((prev) => {
+            const current = prev[statusId];
+            const existingTasks = reset || pageToFetch === 1 ? [] : current?.tasks || [];
+            // Deduplicate tasks by ID
+            const taskMap = new Map<number, Task>();
+            existingTasks.forEach((t) => taskMap.set(t.id, t));
+            newTasks.forEach((t) => taskMap.set(t.id, t));
+            const merged = Array.from(taskMap.values());
+
+            return {
+              ...prev,
+              [statusId]: {
+                tasks: merged,
+                page: pageToFetch,
+                hasMore,
+                isLoading: false,
+                isLoadingMore: false,
+                total,
+                error: null,
+              },
+            };
+          });
+        }
+      } catch (err) {
+        const msg = getErrorMessage(err);
+        setStatusTasksMap((prev) => ({
+          ...prev,
+          [statusId]: {
+            ...(prev[statusId] || { tasks: [], page: 1, hasMore: false, total: 0 }),
+            isLoading: false,
+            isLoadingMore: false,
+            error: msg,
+          },
+        }));
+      }
+    },
+    [isAuthenticated, activeWorkspaceId, activeProjectId, activePriority, searchQuery]
+  );
+
+  // Load next page of tasks for a given status
+  const loadMoreForStatus = useCallback(
+    async (statusId: number) => {
+      const current = statusTasksMap[statusId];
+      if (!current || !current.hasMore || current.isLoadingMore || current.isLoading) {
+        return;
+      }
+      await fetchStatusTasks(statusId, current.page + 1, false);
+    },
+    [statusTasksMap, fetchStatusTasks]
+  );
+
+  // Reload all statuses from page 1
+  const reloadAllStatusTasks = useCallback(async () => {
+    if (!isAuthenticated || statuses.length === 0) return;
+    await Promise.allSettled(
+      statuses.map((st) => fetchStatusTasks(st.id, 1, true))
+    );
+  }, [isAuthenticated, statuses, fetchStatusTasks]);
+
+  // Refetch all status tasks when workspace, project, priority, searchQuery, or statuses change
+  useEffect(() => {
+    if (isAuthenticated && statuses.length > 0) {
+      reloadAllStatusTasks();
+    }
+  }, [isAuthenticated, statuses, activeWorkspaceId, activeProjectId, activePriority, searchQuery, reloadAllStatusTasks]);
+
   const createTask = async (payload: CreateTaskPayload): Promise<Task> => {
     setError(null);
     try {
       const res = await tasksService.createTask(payload);
       if (res.success && res.data) {
         const newTask = res.data;
-        // Re-fetch to get complete relational status/counts or append optimistically
+        // Optimistically insert into statusTasksMap
+        if (newTask.status_id) {
+          setStatusTasksMap((prev) => {
+            const current = prev[newTask.status_id] || {
+              tasks: [],
+              page: 1,
+              hasMore: false,
+              isLoading: false,
+              isLoadingMore: false,
+              total: 0,
+            };
+            return {
+              ...prev,
+              [newTask.status_id]: {
+                ...current,
+                tasks: [newTask, ...current.tasks.filter((t) => t.id !== newTask.id)],
+                total: current.total + 1,
+              },
+            };
+          });
+        }
         await fetchTasks();
         return newTask;
       }
@@ -268,11 +408,54 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       const res = await tasksService.updateTask(id, payload);
       if (res.success && res.data) {
         const updated = res.data;
-        // Update task locally
+        // Update task locally in global tasks
         setTasks((prev) =>
           prev.map((t) => (t.id === id ? { ...t, ...updated } : t))
         );
-        // Refresh to ensure lifecycle fields (working_at, completed_at, actual_minutes) are in sync
+        // Also update task in statusTasksMap
+        setStatusTasksMap((prev) => {
+          const nextMap = { ...prev };
+          let oldStatusId: number | null = null;
+          for (const sId of Object.keys(nextMap)) {
+            const numId = Number(sId);
+            if (nextMap[numId]?.tasks?.some((t) => t.id === id)) {
+              oldStatusId = numId;
+              break;
+            }
+          }
+
+          const targetStatusId = updated.status_id;
+
+          if (oldStatusId && targetStatusId && oldStatusId !== targetStatusId) {
+            // Remove from old status
+            if (nextMap[oldStatusId]) {
+              nextMap[oldStatusId] = {
+                ...nextMap[oldStatusId],
+                tasks: nextMap[oldStatusId].tasks.filter((t) => t.id !== id),
+                total: Math.max(0, nextMap[oldStatusId].total - 1),
+              };
+            }
+            // Add to new status
+            if (nextMap[targetStatusId]) {
+              nextMap[targetStatusId] = {
+                ...nextMap[targetStatusId],
+                tasks: [updated, ...nextMap[targetStatusId].tasks.filter((t) => t.id !== id)],
+                total: nextMap[targetStatusId].total + 1,
+              };
+            }
+          } else {
+            // Update in place
+            const sId = targetStatusId || oldStatusId;
+            if (sId && nextMap[sId]) {
+              nextMap[sId] = {
+                ...nextMap[sId],
+                tasks: nextMap[sId].tasks.map((t) => (t.id === id ? { ...t, ...updated } : t)),
+              };
+            }
+          }
+          return nextMap;
+        });
+
         await fetchTasks();
         return updated;
       }
@@ -290,6 +473,20 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       const res = await tasksService.deleteTask(id);
       if (res.success) {
         setTasks((prev) => prev.filter((t) => t.id !== id));
+        setStatusTasksMap((prev) => {
+          const nextMap = { ...prev };
+          for (const sId of Object.keys(nextMap)) {
+            const numId = Number(sId);
+            if (nextMap[numId]?.tasks?.some((t) => t.id === id)) {
+              nextMap[numId] = {
+                ...nextMap[numId],
+                tasks: nextMap[numId].tasks.filter((t) => t.id !== id),
+                total: Math.max(0, nextMap[numId].total - 1),
+              };
+            }
+          }
+          return nextMap;
+        });
       } else {
         throw new Error(res.message || 'Failed to delete task');
       }
@@ -391,6 +588,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const refreshAll = async () => {
     await fetchMetadata();
     await fetchTasks();
+    await reloadAllStatusTasks();
   };
 
   return (
@@ -409,6 +607,10 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         isLoadingTasks,
         isLoadingMeta,
         error,
+        statusTasksMap,
+        loadMoreForStatus,
+        fetchStatusTasks,
+        reloadAllStatusTasks,
         pagination,
         page,
         perPage,

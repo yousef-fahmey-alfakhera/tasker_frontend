@@ -12,10 +12,6 @@ import {
   User as UserIcon,
   Server,
   ArrowRight,
-  Sparkles,
-  Layers,
-  Clock,
-  ShieldCheck,
   Languages,
 } from 'lucide-react';
 
@@ -61,15 +57,6 @@ export default function AuthScreen() {
       setError(getErrorMessage(err));
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fillDemo = (demoEmail: string, demoPass: string) => {
-    setEmail(demoEmail);
-    setPassword(demoPass);
-    if (isRegister) {
-      setName('Demo User');
-      setPasswordConfirmation(demoPass);
     }
   };
 
@@ -222,8 +209,7 @@ export default function AuthScreen() {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Jane Doe"
-                  className="w-full pl-9 pr-3.5 py-2.5 bg-slate-950/70 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+                  className="w-full pl-9 pr-3.5 py-2.5 bg-slate-950/70 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
                 />
               </div>
             </div>
@@ -242,8 +228,7 @@ export default function AuthScreen() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder={isRegister ? 'name@tasker.test' : t('email_or_code_placeholder')}
-                className="w-full pl-9 pr-3.5 py-2.5 bg-slate-950/70 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+                className="w-full pl-9 pr-3.5 py-2.5 bg-slate-950/70 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
               />
             </div>
           </div>
@@ -261,8 +246,7 @@ export default function AuthScreen() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full pl-9 pr-3.5 py-2.5 bg-slate-950/70 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+                className="w-full pl-9 pr-3.5 py-2.5 bg-slate-950/70 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
               />
             </div>
           </div>
@@ -281,8 +265,7 @@ export default function AuthScreen() {
                   required
                   value={passwordConfirmation}
                   onChange={(e) => setPasswordConfirmation(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-9 pr-3.5 py-2.5 bg-slate-950/70 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+                  className="w-full pl-9 pr-3.5 py-2.5 bg-slate-950/70 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
                 />
               </div>
             </div>
@@ -303,53 +286,6 @@ export default function AuthScreen() {
             )}
           </button>
         </form>
-
-        {/* Demo Credentials Quick Fill */}
-        <div className="mt-6 pt-5 border-t border-slate-800 text-center">
-          <p className="text-xs text-slate-400 mb-2 flex items-center justify-center gap-1">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>Need test credentials?</span>
-          </p>
-          <div className="flex flex-wrap gap-2 justify-center">
-            <button
-              type="button"
-              onClick={() => fillDemo('admin@admin.com', '123456789')}
-              className="text-[11px] text-indigo-300 hover:text-indigo-200 bg-indigo-950/60 border border-indigo-800/60 px-2.5 py-1 rounded-lg transition-colors font-medium"
-            >
-              Admin (admin@admin.com)
-            </button>
-            <button
-              type="button"
-              onClick={() => fillDemo('user@user.com', '123456789')}
-              className="text-[11px] text-indigo-300 hover:text-indigo-200 bg-indigo-950/60 border border-indigo-800/60 px-2.5 py-1 rounded-lg transition-colors font-medium"
-            >
-              User (user@user.com)
-            </button>
-            <button
-              type="button"
-              onClick={() => fillDemo('jane@tasker.test', 'Password123!')}
-              className="text-[11px] text-slate-400 hover:text-slate-200 bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-lg transition-colors"
-            >
-              Remote Jane
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Feature Badges below card */}
-      <div className="w-full max-w-md mt-6 grid grid-cols-3 gap-2 text-center text-slate-400 text-[11px]">
-        <div className="bg-slate-900/50 border border-slate-800/50 rounded-xl p-2.5 flex flex-col items-center gap-1">
-          <ShieldCheck className="w-4 h-4 text-emerald-400" />
-          <span>Sanctum Tokens</span>
-        </div>
-        <div className="bg-slate-900/50 border border-slate-800/50 rounded-xl p-2.5 flex flex-col items-center gap-1">
-          <Clock className="w-4 h-4 text-amber-400" />
-          <span>Time Tracking</span>
-        </div>
-        <div className="bg-slate-900/50 border border-slate-800/50 rounded-xl p-2.5 flex flex-col items-center gap-1">
-          <Layers className="w-4 h-4 text-indigo-400" />
-          <span>Workspaces & Tasks</span>
-        </div>
       </div>
     </div>
   );

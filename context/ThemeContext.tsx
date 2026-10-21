@@ -60,6 +60,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       if (cached === 'light' || cached === 'dark') {
         setThemeModeState(cached);
         applyThemeToDom(cached);
+      } else {
+        setThemeModeState('light');
+        applyThemeToDom('light');
+        localStorage.setItem(THEME_STORAGE_KEY, 'light');
       }
     }
 

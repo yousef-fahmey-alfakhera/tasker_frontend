@@ -38,16 +38,19 @@ export default function AppHeader({
   onOpenNewProject: _onOpenNewProject,
   onOpenNewWorkspace: _onOpenNewWorkspace,
 }: Props) {
-  const { t, language, setLanguage } = useTranslation();
+  const { t, language, setLanguage, isRtl } = useTranslation();
   const { user, logout, activeApiUrl, switchApiUrl } = useAuth();
   const { themeMode, toggleTheme, isLight } = useTheme();
   const {
     workspaces,
     projects,
+    statuses,
     activeWorkspaceId,
     setActiveWorkspaceId,
     activeProjectId,
     setActiveProjectId,
+    activeStatusId,
+    setActiveStatusId,
     activePriority,
     setActivePriority,
     searchQuery,
@@ -59,6 +62,24 @@ export default function AppHeader({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
+  const userMenuRef = React.useRef<HTMLDivElement>(null);
+  const apiMenuRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+      if (apiMenuRef.current && !apiMenuRef.current.contains(event.target as Node)) {
+        setShowApiMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const isLocal = activeApiUrl.includes('127.0.0.1') || activeApiUrl.includes('localhost');
   const isDev = process.env.NODE_ENV === 'development';
@@ -148,6 +169,23 @@ export default function AppHeader({
             />
           </div>
 
+          {/* Status Filter Dropdown */}
+          <select
+            value={activeStatusId ?? 'All'}
+            onChange={(e) =>
+              setActiveStatusId(e.target.value === 'All' ? null : Number(e.target.value))
+            }
+            className="bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-indigo-500 transition-colors shrink-0 max-w-[130px] truncate"
+            title={t('status')}
+          >
+            <option value="All">{t('all_statuses')}</option>
+            {statuses.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+
           <select
             value={activePriority || 'All'}
             onChange={(e) =>
@@ -212,7 +250,7 @@ export default function AppHeader({
 
           {/* API Switcher Pill (desktop) - shown in development only */}
           {isDev && (
-            <div className="relative hidden md:block">
+            <div ref={apiMenuRef} className="relative hidden md:block">
               <button
                 type="button"
                 onClick={() => setShowApiMenu(!showApiMenu)}
@@ -230,7 +268,11 @@ export default function AppHeader({
               </button>
 
               {showApiMenu && (
-                <div className="absolute right-0 mt-2 w-64 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-2 z-50 text-xs animate-fadeIn">
+                <div
+                  className={`absolute ${
+                    isRtl ? 'left-0 right-auto' : 'right-0 left-auto'
+                  } mt-2 w-64 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-2 z-50 text-xs animate-fadeIn`}
+                >
                   <div className="p-2 border-b border-slate-800 text-slate-400 font-medium">
                     {t('active_endpoint')}
                   </div>
@@ -309,7 +351,7 @@ export default function AppHeader({
           </button>
 
           {/* User Profile Menu (Desktop) */}
-          <div className="relative hidden md:block">
+          <div ref={userMenuRef} className="relative hidden md:block">
             <button
               type="button"
               onClick={() => setShowUserMenu(!showUserMenu)}
@@ -321,7 +363,11 @@ export default function AppHeader({
             </button>
 
             {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-52 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-2 z-50 text-xs animate-fadeIn">
+              <div
+                className={`absolute ${
+                  isRtl ? 'left-0 right-auto' : 'right-0 left-auto'
+                } mt-2 w-52 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-2 z-50 text-xs animate-fadeIn`}
+              >
                 <div className="p-2 border-b border-slate-800">
                   <div className="font-semibold text-white truncate">{user?.name}</div>
                   <div className="text-[11px] text-slate-400 truncate">{user?.email}</div>
@@ -418,6 +464,23 @@ export default function AppHeader({
               autoFocus
             />
           </div>
+          {/* Mobile Status Filter */}
+          <select
+            value={activeStatusId ?? 'All'}
+            onChange={(e) =>
+              setActiveStatusId(e.target.value === 'All' ? null : Number(e.target.value))
+            }
+            className="bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-indigo-500 transition-colors shrink-0"
+            title={t('status')}
+          >
+            <option value="All">{t('all_statuses')}</option>
+            {statuses.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+
           <select
             value={activePriority || 'All'}
             onChange={(e) =>

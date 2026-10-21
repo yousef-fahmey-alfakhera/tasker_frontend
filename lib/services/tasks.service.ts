@@ -16,7 +16,14 @@ export const tasksService = {
     const cleanParams: Record<string, string | number> = {};
     if (params?.workspace_id) cleanParams.workspace_id = params.workspace_id;
     if (params?.project_id) cleanParams.project_id = params.project_id;
-    if (params?.status_id) cleanParams.status_id = params.status_id;
+    if (params?.status_id !== undefined && params?.status_id !== null) {
+      cleanParams.status_id = params.status_id;
+      cleanParams.status_is = params.status_id;
+    }
+    if (params?.status_is !== undefined && params?.status_is !== null) {
+      cleanParams.status_id = params.status_is;
+      cleanParams.status_is = params.status_is;
+    }
     if (params?.priority) cleanParams.priority = params.priority;
     if (params?.page) cleanParams.page = params.page;
     if (params?.per_page) cleanParams.per_page = params.per_page;

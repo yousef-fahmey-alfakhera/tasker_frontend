@@ -210,12 +210,23 @@ export interface TaskFilterParams {
   workspace_id?: number;
   project_id?: number;
   status_id?: number;
+  status_is?: number;
   priority?: TaskPriority;
   search?: string;
   page?: number;
   per_page?: number;
   parent_task_id?: number | null;
   parent_id?: number | null;
+}
+
+export interface StatusTasksState {
+  tasks: Task[];
+  page: number;
+  hasMore: boolean;
+  isLoading: boolean;
+  isLoadingMore: boolean;
+  total: number;
+  error?: string | null;
 }
 
 // Settings & User Settings Types
