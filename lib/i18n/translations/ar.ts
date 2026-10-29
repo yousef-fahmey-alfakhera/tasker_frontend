@@ -173,4 +173,10 @@ export const ar: Record<TranslationKey, string> = {
   language_english: 'English',
   language_arabic: 'العربية (Arabic)',
   language_urdu: 'اردو (Urdu)',
+
+  // Dashboard & Department Features
+  dashboard: 'لوحة التحكم والإدارة',
+  primary_department: 'القسم الأساسي',
+  viewing_own_tasks_in_other_project: 'عرض المهام المنشأة بواسطتك فقط في هذا القسم. يمكنك إنشاء مهام جديدة من زر "+ مهمة جديدة" بالأعلى.',
+  tasks: 'مهام',
 };

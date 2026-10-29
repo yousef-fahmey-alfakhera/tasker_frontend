@@ -41,6 +41,7 @@ export default function TaskBoardView({ onEditTask, onAddTask }: Props) {
     searchQuery,
     statusTasksMap,
     loadMoreForStatus,
+    isOtherProject,
   } = useTasks();
 
   // Collapsible columns state (accordion/dropdown per status)
@@ -136,6 +137,22 @@ export default function TaskBoardView({ onEditTask, onAddTask }: Props) {
         })}
       </div>
 
+      {/* Other Project Notice: User only sees their created tasks and creates tasks from top bar button */}
+      {isOtherProject && (
+        <div className="mx-3 sm:mx-6 mt-3 px-3.5 py-2 rounded-xl bg-indigo-950/40 border border-indigo-500/30 text-indigo-200 text-xs flex items-center justify-between gap-2 shadow-sm animate-fadeIn">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
+            <span>
+              {t('viewing_own_tasks_in_other_project') ||
+                'عرض مهامك المنشأة فقط في هذا القسم. لإنشاء مهمة جديدة، استخدم زر "+ مهمة جديدة" بالأعلى.'}
+            </span>
+          </div>
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-indigo-900/60 text-indigo-300 border border-indigo-500/40 shrink-0">
+            {filteredTasks.length} {t('tasks') || 'مهام'}
+          </span>
+        </div>
+      )}
+
       {/* Columns Container */}
       <div className="flex-1 overflow-x-auto p-3 sm:p-6 snap-x snap-mandatory scroll-smooth">
         <div className="flex gap-3 sm:gap-6 min-w-max items-start">
@@ -218,8 +235,8 @@ export default function TaskBoardView({ onEditTask, onAddTask }: Props) {
                     </span>
                   </div>
 
-                  {/* '+' button to create task directly under this status */}
-                  {canCreateTask && (
+                  {/* '+' button to create task directly under this status (disabled for other projects) */}
+                  {canCreateTask && !isOtherProject && (
                     <button
                       type="button"
                       onClick={() => onAddTask(status.id, false)}
@@ -245,8 +262,8 @@ export default function TaskBoardView({ onEditTask, onAddTask }: Props) {
                     <div className="py-12 px-4 text-center text-slate-400 flex flex-col items-center gap-2">
                       <Inbox className="w-8 h-8 opacity-40" />
                       <p className="text-xs">{t('no_tasks_in_column', { status: status.name })}</p>
-                      {/* Only show create first task if user has create permission */}
-                      {canCreateTask && (
+                      {/* Only show create first task if user has create permission and not viewing other project */}
+                      {canCreateTask && !isOtherProject && (
                         <button
                           type="button"
                           onClick={() => onAddTask(status.id, false)}

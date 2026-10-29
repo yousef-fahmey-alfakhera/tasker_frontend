@@ -53,6 +53,8 @@ export interface TaskType {
   id: number;
   name: string;
   type: string;
+  project_id?: number | null;
+  project?: Project | null;
   created_at?: string;
   updated_at?: string;
 }

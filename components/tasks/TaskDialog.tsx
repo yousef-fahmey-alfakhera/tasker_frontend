@@ -116,6 +116,44 @@ export default function TaskDialog({
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  // Filter task types based on chosen projectId
+  const availableTaskTypes = React.useMemo(() => {
+    if (!projectId) return taskTypes;
+    const projectTypes = taskTypes.filter((tt) => tt.project_id === projectId);
+    if (projectTypes.length > 0) {
+      return projectTypes;
+    }
+    const generalTypes = taskTypes.filter((tt) => !tt.project_id);
+    return generalTypes.length > 0 ? generalTypes : taskTypes;
+  }, [taskTypes, projectId]);
+
+  // Filter workspaces based on chosen projectId
+  const availableWorkspaces = React.useMemo(() => {
+    if (!projectId) return workspaces;
+    const projectWorkspaces = workspaces.filter((ws) => !ws.project_id || ws.project_id === projectId);
+    return projectWorkspaces.length > 0 ? projectWorkspaces : workspaces;
+  }, [workspaces, projectId]);
+
+  // Sync taskTypeId when projectId changes if current type does not belong to project
+  useEffect(() => {
+    if (availableTaskTypes.length > 0) {
+      const exists = availableTaskTypes.some((tt) => tt.id === taskTypeId);
+      if (!exists) {
+        setTaskTypeId(availableTaskTypes[0].id);
+      }
+    }
+  }, [projectId, availableTaskTypes, taskTypeId]);
+
+  // Sync workspaceId when projectId changes if current workspace does not belong to project
+  useEffect(() => {
+    if (availableWorkspaces.length > 0) {
+      const exists = availableWorkspaces.some((ws) => ws.id === workspaceId);
+      if (!exists) {
+        setWorkspaceId(availableWorkspaces[0].id);
+      }
+    }
+  }, [projectId, availableWorkspaces, workspaceId]);
+
   useEffect(() => {
     let isCancelled = false;
 
@@ -167,10 +205,22 @@ export default function TaskDialog({
         : initialStatusId || statuses[0]?.id || 1;
 
       setStatusId(defaultStatus);
-      setTaskTypeId(taskTypes[0]?.id || 1);
+
+      const initialProjId = activeProjectId || projects[0]?.id || 1;
+      setProjectId(initialProjId);
+
+      const matchingWorkspaces = workspaces.filter((ws) => !ws.project_id || ws.project_id === initialProjId);
+      setWorkspaceId(
+        activeWorkspaceId && matchingWorkspaces.some((ws) => ws.id === activeWorkspaceId)
+          ? activeWorkspaceId
+          : matchingWorkspaces[0]?.id || workspaces[0]?.id || 1
+      );
+
+      const matchingTypes = taskTypes.filter((tt) => tt.project_id === initialProjId);
+      const chosenType = matchingTypes.length > 0 ? matchingTypes[0] : (taskTypes.find((tt) => !tt.project_id) || taskTypes[0]);
+      setTaskTypeId(chosenType?.id || 1);
+
       setPriority('Normal');
-      setWorkspaceId(activeWorkspaceId || workspaces[0]?.id || 1);
-      setProjectId(activeProjectId || projects[0]?.id || 1);
       setStartDate('');
       setDueDate('');
       setExistingAttachments([]);
@@ -475,93 +525,55 @@ export default function TaskDialog({
             />
           </div>
 
-          {/* Task Type */}
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1 flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                <span>{t('task_type_label')}</span>
-              </span>
-              <span className="text-[10px] text-slate-400 font-mono">
-                {taskTypes.length > 0 ? t('types_available', { count: taskTypes.length }) : t('default_type')}
-              </span>
-            </label>
-            <select
-              value={taskTypeId}
-              disabled={isReadOnly}
-              onChange={(e) => setTaskTypeId(Number(e.target.value))}
-              className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors font-medium disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {taskTypes.map((tt) => (
-                <option key={tt.id} value={tt.id}>
-                  {tt.name} ({tt.type})
-                </option>
-              ))}
-            </select>
-          </div>
-
           {/* If quick create, hide status, project, workspace, start_date, due_date */}
           {isQuickCreate ? (
-            /* In quick create mode, only priority is optional; others are hidden */
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
-                {t('priority')}
-              </label>
-              <select
-                value={priority}
-                disabled={isReadOnly}
-                onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {PRIORITIES.map((p) => (
-                  <option key={p} value={p}>
-                    {t(`priority_${p.toLowerCase()}` as any) || p}
-                  </option>
-                ))}
-              </select>
-            </div>
+            /* In quick create mode, only type & priority are shown */
+            <>
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>{t('task_type_label')}</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    {availableTaskTypes.length > 0 ? t('types_available', { count: availableTaskTypes.length }) : t('default_type')}
+                  </span>
+                </label>
+                <select
+                  value={taskTypeId}
+                  disabled={isReadOnly}
+                  onChange={(e) => setTaskTypeId(Number(e.target.value))}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {availableTaskTypes.map((tt) => (
+                    <option key={tt.id} value={tt.id}>
+                      {tt.name} ({tt.type})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">
+                  {t('priority')}
+                </label>
+                <select
+                  value={priority}
+                  disabled={isReadOnly}
+                  onChange={(e) => setPriority(e.target.value as TaskPriority)}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {PRIORITIES.map((p) => (
+                    <option key={p} value={p}>
+                      {t(`priority_${p.toLowerCase()}` as any) || p}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
           ) : (
             /* Normal / Full Create or Edit Mode: All fields are shown and editable */
             <>
-              {/* Grid: Status & Priority */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">
-                    {t('status')}
-                  </label>
-                  <select
-                    value={statusId}
-                    disabled={isReadOnly}
-                    onChange={(e) => setStatusId(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    {statuses.map((st) => (
-                      <option key={st.id} value={st.id}>
-                        {st.name} ({st.stage})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">
-                    {t('priority')}
-                  </label>
-                  <select
-                    value={priority}
-                    disabled={isReadOnly}
-                    onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    {PRIORITIES.map((p) => (
-                      <option key={p} value={p}>
-                        {t(`priority_${p.toLowerCase()}` as any) || p}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
               {/* Grid: Project & Workspace */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -592,13 +604,77 @@ export default function TaskDialog({
                     onChange={(e) => setWorkspaceId(Number(e.target.value))}
                     className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {workspaces.map((ws) => (
+                    {availableWorkspaces.map((ws) => (
                       <option key={ws.id} value={ws.id}>
                         {ws.name}
                       </option>
                     ))}
                   </select>
                 </div>
+              </div>
+
+              {/* Grid: Task Type & Status */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>{t('task_type_label')}</span>
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      {availableTaskTypes.length > 0 ? t('types_available', { count: availableTaskTypes.length }) : t('default_type')}
+                    </span>
+                  </label>
+                  <select
+                    value={taskTypeId}
+                    disabled={isReadOnly}
+                    onChange={(e) => setTaskTypeId(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {availableTaskTypes.map((tt) => (
+                      <option key={tt.id} value={tt.id}>
+                        {tt.name} ({tt.type})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                    {t('status')}
+                  </label>
+                  <select
+                    value={statusId}
+                    disabled={isReadOnly}
+                    onChange={(e) => setStatusId(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {statuses.map((st) => (
+                      <option key={st.id} value={st.id}>
+                        {st.name} ({st.stage})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Priority */}
+              <div>
+                <label className="block text-xs font-medium text-slate-300 mb-1">
+                  {t('priority')}
+                </label>
+                <select
+                  value={priority}
+                  disabled={isReadOnly}
+                  onChange={(e) => setPriority(e.target.value as TaskPriority)}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {PRIORITIES.map((p) => (
+                    <option key={p} value={p}>
+                      {t(`priority_${p.toLowerCase()}` as any) || p}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Grid: Dates */}

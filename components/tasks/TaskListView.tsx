@@ -54,6 +54,7 @@ export default function TaskListView({ onEditTask, onAddTask }: Props) {
     perPage,
     setPage,
     setPerPage,
+    isOtherProject,
   } = useTasks();
 
   const [groupMode, setGroupMode] = React.useState<'grouped' | 'flat'>('grouped');
@@ -430,7 +431,7 @@ export default function TaskListView({ onEditTask, onAddTask }: Props) {
           </button>
         </div>
 
-        {canCreateTask && (
+        {canCreateTask && !isOtherProject && (
           <button
             type="button"
             onClick={() => onAddTask()}
@@ -441,6 +442,22 @@ export default function TaskListView({ onEditTask, onAddTask }: Props) {
           </button>
         )}
       </div>
+
+      {/* Other Project Notice Banner */}
+      {isOtherProject && (
+        <div className="p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/30 text-indigo-200 text-xs flex items-center justify-between gap-2 shadow-sm animate-fadeIn">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
+            <span>
+              {t('viewing_own_tasks_in_other_project') ||
+                'عرض مهامك المنشأة فقط في هذا القسم. لإنشاء مهمة جديدة، استخدم زر "+ مهمة جديدة" بأعلى الصفحة.'}
+            </span>
+          </div>
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-indigo-900/60 text-indigo-300 border border-indigo-500/40 shrink-0">
+            {filteredTasks.length} {t('tasks') || 'مهام'}
+          </span>
+        </div>
+      )}
 
       {groupMode === 'grouped' ? (
         /* Status Dropdown Accordions with Infinite Scroll */
@@ -494,7 +511,7 @@ export default function TaskListView({ onEditTask, onAddTask }: Props) {
                   </div>
 
                   <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                    {canCreateTask && (
+                    {canCreateTask && !isOtherProject && (
                       <button
                         type="button"
                         onClick={() => onAddTask(status.id)}

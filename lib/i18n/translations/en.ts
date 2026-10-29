@@ -171,6 +171,12 @@ export const en = {
   language_english: 'English',
   language_arabic: 'العربية (Arabic)',
   language_urdu: 'اردو (Urdu)',
+
+  // Dashboard & Department Features
+  dashboard: 'Management Dashboard',
+  primary_department: 'Primary Department',
+  viewing_own_tasks_in_other_project: 'Showing only tasks created by you in this department. Create new tasks using the top bar button.',
+  tasks: 'Tasks',
 };
 
 export type TranslationKey = keyof typeof en;

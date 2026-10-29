@@ -17,6 +17,7 @@ import {
   Sun,
   Moon,
   Languages,
+  LayoutDashboard,
   Menu,
   X,
 } from 'lucide-react';
@@ -86,6 +87,22 @@ export default function AppHeader({
 
   const priorities: (TaskPriority | 'All')[] = ['All', 'Urgent', 'High', 'Normal', 'Low'];
 
+  const dashboardUrl = React.useMemo(() => {
+    try {
+      const url = new URL(activeApiUrl);
+      return `${url.origin}/dashboard`;
+    } catch {
+      return '/dashboard';
+    }
+  }, [activeApiUrl]);
+
+  const authProjectId = user?.project_id ?? user?.project?.id;
+
+  const availableWorkspaces = React.useMemo(() => {
+    if (!activeProjectId) return workspaces;
+    return workspaces.filter((w) => !w.project_id || w.project_id === activeProjectId);
+  }, [workspaces, activeProjectId]);
+
   const currentProjectName =
     projects.find((p) => p.id === activeProjectId)?.name || t('all_projects');
   const currentWorkspaceName =
@@ -127,14 +144,17 @@ export default function AppHeader({
             <select
               value={activeProjectId || ''}
               onChange={(e) => setActiveProjectId(e.target.value ? Number(e.target.value) : null)}
-              className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors max-w-[150px] truncate"
+              className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors max-w-[170px] truncate"
             >
               <option value="">{t('all_projects')}</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
+              {projects.map((p) => {
+                const isDefault = p.id === authProjectId;
+                return (
+                  <option key={p.id} value={p.id}>
+                    {p.name}{isDefault ? ' (القسم الأساسي)' : ''}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
@@ -147,7 +167,7 @@ export default function AppHeader({
               className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors max-w-[150px] truncate"
             >
               <option value="">{t('all_workspaces')}</option>
-              {workspaces.map((w) => (
+              {availableWorkspaces.map((w) => (
                 <option key={w.id} value={w.id}>
                   {w.name}
                 </option>
@@ -410,6 +430,19 @@ export default function AppHeader({
                   <span className="text-[10px] text-indigo-400 font-mono">{t('switch')}</span>
                 </button>
 
+                <a
+                  href={dashboardUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full text-left p-2 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition-colors flex items-center justify-between mt-0.5"
+                >
+                  <div className="flex items-center gap-2">
+                    <LayoutDashboard className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>{t('dashboard') || 'لوحة التحكم'}</span>
+                  </div>
+                  <span className="text-[10px] text-indigo-400 font-mono">↗</span>
+                </a>
+
                 <button
                   type="button"
                   onClick={() => {
@@ -515,11 +548,14 @@ export default function AppHeader({
                 className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
               >
                 <option value="">{t('all_projects')}</option>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
+                {projects.map((p) => {
+                  const isDefault = p.id === authProjectId;
+                  return (
+                    <option key={p.id} value={p.id}>
+                      {p.name}{isDefault ? ' (القسم الأساسي)' : ''}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -536,7 +572,7 @@ export default function AppHeader({
                 className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
               >
                 <option value="">{t('all_workspaces')}</option>
-                {workspaces.map((w) => (
+                {availableWorkspaces.map((w) => (
                   <option key={w.id} value={w.id}>
                     {w.name}
                   </option>
@@ -596,6 +632,15 @@ export default function AppHeader({
             </div>
 
             <div className="flex items-center gap-1 shrink-0">
+              <a
+                href={dashboardUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-slate-800 transition-colors"
+                title={t('dashboard') || 'لوحة التحكم'}
+              >
+                <LayoutDashboard className="w-4 h-4" />
+              </a>
               <button
                 type="button"
                 onClick={handleToggleLanguage}

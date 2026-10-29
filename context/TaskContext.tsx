@@ -40,6 +40,7 @@ interface TaskContextType {
   isLoadingTasks: boolean;
   isLoadingMeta: boolean;
   error: string | null;
+  isOtherProject: boolean;
   // Per-status tasks & pagination (infinite scroll)
   statusTasksMap: Record<number, StatusTasksState>;
   loadMoreForStatus: (statusId: number) => Promise<void>;
@@ -77,7 +78,7 @@ interface TaskContextType {
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
 
 export function TaskProvider({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, activeApiUrl } = useAuth();
+  const { isAuthenticated, activeApiUrl, user } = useAuth();
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [statuses, setStatuses] = useState<TaskStatus[]>([]);
@@ -90,6 +91,15 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [activeStatusId, setActiveStatusId] = useState<number | null>(null);
   const [activePriority, setActivePriority] = useState<TaskPriority | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [hasDefaultedProject, setHasDefaultedProject] = useState(false);
+
+  // Determine if viewing a project other than auth user's department/project
+  const authUserProjectId = user?.project_id ?? user?.project?.id ?? null;
+  const isOtherProject = Boolean(
+    activeProjectId &&
+    authUserProjectId &&
+    activeProjectId !== authUserProjectId
+  );
 
   // Pagination state
   const [pagination, setPagination] = useState<PaginationMeta | null>(null);
@@ -136,7 +146,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     try {
       const [statusesRes, taskTypesRes, workspacesRes, projectsRes] = await Promise.allSettled([
         metadataService.getTaskStatuses(),
-        metadataService.getTaskTypes(activeProjectId),
+        metadataService.getTaskTypes(),
         metadataService.getWorkspaces(),
         metadataService.getProjects(),
       ]);
@@ -158,7 +168,14 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         const fetchedProjects = projectsRes.value.data || [];
         setProjects(fetchedProjects);
         if (!activeProjectId && fetchedProjects.length > 0) {
-          setActiveProjectId(fetchedProjects[0].id);
+          const authProjectId = user?.project_id ?? user?.project?.id;
+          const userProjectFound = authProjectId && fetchedProjects.some((p) => p.id === authProjectId);
+          if (userProjectFound) {
+            setActiveProjectId(authProjectId);
+            setHasDefaultedProject(true);
+          } else {
+            setActiveProjectId(fetchedProjects[0].id);
+          }
         }
       }
     } catch (err) {
@@ -166,12 +183,37 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoadingMeta(false);
     }
-  }, [isAuthenticated, activeWorkspaceId, activeProjectId]);
+  }, [isAuthenticated, activeWorkspaceId, activeProjectId, user]);
+
+  // Ensure default project is the auth user's project once user & projects load
+  useEffect(() => {
+    if (user && projects.length > 0 && !hasDefaultedProject) {
+      const authProjectId = user.project_id ?? user.project?.id;
+      if (authProjectId && projects.some((p) => p.id === authProjectId)) {
+        setActiveProjectId(authProjectId);
+        setHasDefaultedProject(true);
+      } else if (activeProjectId === null) {
+        setActiveProjectId(projects[0].id);
+        setHasDefaultedProject(true);
+      }
+    }
+  }, [user, projects, hasDefaultedProject, activeProjectId]);
 
   // Reset page to 1 when filters change
   useEffect(() => {
     setPage(1);
   }, [activeWorkspaceId, activeProjectId, activeStatusId, activePriority, searchQuery]);
+
+  // When active project changes, ensure activeWorkspaceId belongs to that project
+  useEffect(() => {
+    if (activeProjectId && activeWorkspaceId && workspaces.length > 0) {
+      const currentWs = workspaces.find((w) => w.id === activeWorkspaceId);
+      if (currentWs && currentWs.project_id && currentWs.project_id !== activeProjectId) {
+        const projectWs = workspaces.filter((w) => w.project_id === activeProjectId);
+        setActiveWorkspaceId(projectWs.length > 0 ? projectWs[0].id : null);
+      }
+    }
+  }, [activeProjectId, activeWorkspaceId, workspaces]);
 
   // Refetch tasks with current filters & pagination
   const fetchTasks = useCallback(async () => {
@@ -179,27 +221,38 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     setIsLoadingTasks(true);
     setError(null);
     try {
+      const authProjectId = user?.project_id ?? user?.project?.id;
+      const isViewingOther = Boolean(
+        activeProjectId &&
+        authProjectId &&
+        activeProjectId !== authProjectId
+      );
+
       const params: Record<string, any> = {
         page,
         per_page: perPage,
       };
       if (activeWorkspaceId) params.workspace_id = activeWorkspaceId;
       if (activeProjectId) params.project_id = activeProjectId;
+      if (isViewingOther && user?.id) params.created_by = user.id;
       if (activeStatusId) params.status_id = activeStatusId;
       if (activePriority) params.priority = activePriority;
       if (searchQuery.trim()) params.search = searchQuery.trim();
 
       const res = await tasksService.getTasks(params);
       if (res.success && Array.isArray(res.data)) {
-        setTasks(res.data);
+        const filteredTasks = (isViewingOther && user?.id)
+          ? res.data.filter((t: Task) => t.created_by === user.id)
+          : res.data;
+        setTasks(filteredTasks);
         if (res.pagination) {
           setPagination(res.pagination);
         } else {
           setPagination({
             current_page: page,
             per_page: perPage,
-            total: res.data.length,
-            last_page: Math.ceil(res.data.length / perPage) || 1,
+            total: filteredTasks.length,
+            last_page: Math.ceil(filteredTasks.length / perPage) || 1,
           });
         }
       }
@@ -218,6 +271,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     searchQuery,
     page,
     perPage,
+    user,
   ]);
 
   // Refetch metadata and tasks when authentication or active API URL changes
@@ -233,6 +287,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       setActiveWorkspaceId(null);
       setActiveProjectId(null);
       setPagination(null);
+      setHasDefaultedProject(false);
     }
   }, [isAuthenticated, activeApiUrl, fetchMetadata]);
 
@@ -276,6 +331,13 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       });
 
       try {
+        const authProjectId = user?.project_id ?? user?.project?.id;
+        const isViewingOther = Boolean(
+          activeProjectId &&
+          authProjectId &&
+          activeProjectId !== authProjectId
+        );
+
         const params: Record<string, any> = {
           status_id: statusId,
           status_is: statusId,
@@ -284,12 +346,16 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         };
         if (activeWorkspaceId) params.workspace_id = activeWorkspaceId;
         if (activeProjectId) params.project_id = activeProjectId;
+        if (isViewingOther && user?.id) params.created_by = user.id;
         if (activePriority) params.priority = activePriority;
         if (searchQuery.trim()) params.search = searchQuery.trim();
 
         const res = await tasksService.getTasks(params);
         if (res.success && Array.isArray(res.data)) {
-          const newTasks = res.data;
+          const rawTasks = res.data;
+          const newTasks = (isViewingOther && user?.id)
+            ? rawTasks.filter((t: Task) => t.created_by === user.id)
+            : rawTasks;
           const paginationMeta = res.pagination;
           const total = paginationMeta?.total ?? newTasks.length;
           const lastPage = paginationMeta?.last_page ?? 1;
@@ -331,7 +397,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         }));
       }
     },
-    [isAuthenticated, activeWorkspaceId, activeProjectId, activePriority, searchQuery]
+    [isAuthenticated, activeWorkspaceId, activeProjectId, activePriority, searchQuery, user]
   );
 
   // Load next page of tasks for a given status
@@ -607,6 +673,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         isLoadingTasks,
         isLoadingMeta,
         error,
+        isOtherProject,
         statusTasksMap,
         loadMoreForStatus,
         fetchStatusTasks,

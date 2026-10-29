@@ -173,4 +173,10 @@ export const ur: Record<TranslationKey, string> = {
   language_english: 'English',
   language_arabic: 'العربية (Arabic)',
   language_urdu: 'اردو (Urdu)',
+
+  // Dashboard & Department Features
+  dashboard: 'مینجمنٹ ڈیش بورڈ',
+  primary_department: 'بنیادی شعبہ',
+  viewing_own_tasks_in_other_project: 'اس شعبے میں صرف آپ کے بنائے ہوئے ٹاسکس دکھائے جا رہے ہیں۔ اوپر والے بٹن سے نیا ٹاسک بنائیں۔',
+  tasks: 'ٹاسکس',
 };
