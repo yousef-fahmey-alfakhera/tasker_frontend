@@ -6,6 +6,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useRef,
 } from 'react';
 import {
   Attachment,
@@ -91,7 +92,30 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [activeStatusId, setActiveStatusId] = useState<number | null>(null);
   const [activePriority, setActivePriority] = useState<TaskPriority | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('');
   const [hasDefaultedProject, setHasDefaultedProject] = useState(false);
+
+  // References to keep callbacks stable and avoid request loops
+  const userRef = useRef(user);
+  userRef.current = user;
+
+  const activeWorkspaceIdRef = useRef(activeWorkspaceId);
+  activeWorkspaceIdRef.current = activeWorkspaceId;
+
+  const activeProjectIdRef = useRef(activeProjectId);
+  activeProjectIdRef.current = activeProjectId;
+
+  const inFlightStatusFetch = useRef<Record<number, boolean>>({});
+  const inFlightTasksFetch = useRef(false);
+  const inFlightMetadataFetch = useRef(false);
+
+  // Debounce search query to avoid firing requests on every keystroke
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
 
   // Determine if viewing a project other than auth user's department/project
   const authUserProjectId = user?.project_id ?? user?.project?.id ?? null;
@@ -141,7 +165,8 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
   // Fetch metadata: statuses, taskTypes, workspaces, projects
   const fetchMetadata = useCallback(async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || inFlightMetadataFetch.current) return;
+    inFlightMetadataFetch.current = true;
     setIsLoadingMeta(true);
     try {
       const [statusesRes, taskTypesRes, workspacesRes, projectsRes] = await Promise.allSettled([
@@ -152,23 +177,58 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       ]);
 
       if (statusesRes.status === 'fulfilled' && statusesRes.value.success) {
-        setStatuses(statusesRes.value.data || []);
+        const fetchedStatuses = statusesRes.value.data || [];
+        setStatuses((prev) => {
+          if (
+            prev.length === fetchedStatuses.length &&
+            prev.every((s, i) => s.id === fetchedStatuses[i]?.id && s.name === fetchedStatuses[i]?.name)
+          ) {
+            return prev;
+          }
+          return fetchedStatuses;
+        });
       }
       if (taskTypesRes.status === 'fulfilled' && taskTypesRes.value.success) {
-        setTaskTypes(taskTypesRes.value.data || []);
+        const fetchedTypes = taskTypesRes.value.data || [];
+        setTaskTypes((prev) => {
+          if (
+            prev.length === fetchedTypes.length &&
+            prev.every((t, i) => t.id === fetchedTypes[i]?.id && t.name === fetchedTypes[i]?.name)
+          ) {
+            return prev;
+          }
+          return fetchedTypes;
+        });
       }
       if (workspacesRes.status === 'fulfilled' && workspacesRes.value.success) {
         const fetchedWorkspaces = workspacesRes.value.data || [];
-        setWorkspaces(fetchedWorkspaces);
-        if (!activeWorkspaceId && fetchedWorkspaces.length > 0) {
+        setWorkspaces((prev) => {
+          if (
+            prev.length === fetchedWorkspaces.length &&
+            prev.every((w, i) => w.id === fetchedWorkspaces[i]?.id && w.name === fetchedWorkspaces[i]?.name)
+          ) {
+            return prev;
+          }
+          return fetchedWorkspaces;
+        });
+        if (activeWorkspaceIdRef.current === null && fetchedWorkspaces.length > 0) {
           setActiveWorkspaceId(fetchedWorkspaces[0].id);
         }
       }
       if (projectsRes.status === 'fulfilled' && projectsRes.value.success) {
         const fetchedProjects = projectsRes.value.data || [];
-        setProjects(fetchedProjects);
-        if (!activeProjectId && fetchedProjects.length > 0) {
-          const authProjectId = user?.project_id ?? user?.project?.id;
+        setProjects((prev) => {
+          if (
+            prev.length === fetchedProjects.length &&
+            prev.every((p, i) => p.id === fetchedProjects[i]?.id && p.name === fetchedProjects[i]?.name)
+          ) {
+            return prev;
+          }
+          return fetchedProjects;
+        });
+        if (activeProjectIdRef.current === null && fetchedProjects.length > 0) {
+          const u = userRef.current;
+          const authProjectId = u?.project_id ?? u?.project?.id;
           const userProjectFound = authProjectId && fetchedProjects.some((p) => p.id === authProjectId);
           if (userProjectFound) {
             setActiveProjectId(authProjectId);
@@ -182,8 +242,9 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       console.error('Error fetching metadata:', err);
     } finally {
       setIsLoadingMeta(false);
+      inFlightMetadataFetch.current = false;
     }
-  }, [isAuthenticated, activeWorkspaceId, activeProjectId, user]);
+  }, [isAuthenticated]);
 
   // Ensure default project is the auth user's project once user & projects load
   useEffect(() => {
@@ -202,7 +263,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   // Reset page to 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [activeWorkspaceId, activeProjectId, activeStatusId, activePriority, searchQuery]);
+  }, [activeWorkspaceId, activeProjectId, activeStatusId, activePriority, debouncedSearchQuery]);
 
   // When active project changes, ensure activeWorkspaceId belongs to that project
   useEffect(() => {
@@ -218,6 +279,8 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   // Refetch tasks with current filters & pagination
   const fetchTasks = useCallback(async () => {
     if (!isAuthenticated) return;
+    if (inFlightTasksFetch.current) return;
+    inFlightTasksFetch.current = true;
     setIsLoadingTasks(true);
     setError(null);
     try {
@@ -237,7 +300,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       if (isViewingOther && user?.id) params.created_by = user.id;
       if (activeStatusId) params.status_id = activeStatusId;
       if (activePriority) params.priority = activePriority;
-      if (searchQuery.trim()) params.search = searchQuery.trim();
+      if (debouncedSearchQuery.trim()) params.search = debouncedSearchQuery.trim();
 
       const res = await tasksService.getTasks(params);
       if (res.success && Array.isArray(res.data)) {
@@ -261,6 +324,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       setError(msg);
     } finally {
       setIsLoadingTasks(false);
+      inFlightTasksFetch.current = false;
     }
   }, [
     isAuthenticated,
@@ -268,7 +332,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     activeProjectId,
     activeStatusId,
     activePriority,
-    searchQuery,
+    debouncedSearchQuery,
     page,
     perPage,
     user,
@@ -298,17 +362,21 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, activeProjectId, fetchTaskTypes]);
 
-  // Refetch tasks when workspace, filters, or pagination change
+  // Refetch tasks when workspace, filters, or pagination change (debounced)
   useEffect(() => {
-    if (isAuthenticated) {
+    if (!isAuthenticated) return;
+    const timer = setTimeout(() => {
       fetchTasks();
-    }
+    }, 120);
+    return () => clearTimeout(timer);
   }, [isAuthenticated, fetchTasks]);
 
   // Fetch tasks for a specific status with pagination
   const fetchStatusTasks = useCallback(
     async (statusId: number, pageToFetch: number = 1, reset: boolean = false) => {
       if (!isAuthenticated) return;
+      if (inFlightStatusFetch.current[statusId]) return;
+      inFlightStatusFetch.current[statusId] = true;
 
       setStatusTasksMap((prev) => {
         const current = prev[statusId] || {
@@ -348,7 +416,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         if (activeProjectId) params.project_id = activeProjectId;
         if (isViewingOther && user?.id) params.created_by = user.id;
         if (activePriority) params.priority = activePriority;
-        if (searchQuery.trim()) params.search = searchQuery.trim();
+        if (debouncedSearchQuery.trim()) params.search = debouncedSearchQuery.trim();
 
         const res = await tasksService.getTasks(params);
         if (res.success && Array.isArray(res.data)) {
@@ -395,16 +463,18 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
             error: msg,
           },
         }));
+      } finally {
+        inFlightStatusFetch.current[statusId] = false;
       }
     },
-    [isAuthenticated, activeWorkspaceId, activeProjectId, activePriority, searchQuery, user]
+    [isAuthenticated, activeWorkspaceId, activeProjectId, activePriority, debouncedSearchQuery, user]
   );
 
   // Load next page of tasks for a given status
   const loadMoreForStatus = useCallback(
     async (statusId: number) => {
       const current = statusTasksMap[statusId];
-      if (!current || !current.hasMore || current.isLoadingMore || current.isLoading) {
+      if (!current || !current.hasMore || current.isLoadingMore || current.isLoading || inFlightStatusFetch.current[statusId]) {
         return;
       }
       await fetchStatusTasks(statusId, current.page + 1, false);
@@ -420,12 +490,15 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     );
   }, [isAuthenticated, statuses, fetchStatusTasks]);
 
-  // Refetch all status tasks when workspace, project, priority, searchQuery, or statuses change
+  // Refetch all status tasks when workspace, project, priority, searchQuery, or statuses change (debounced)
+  const statusIdsKey = statuses.map((s) => s.id).join(',');
   useEffect(() => {
-    if (isAuthenticated && statuses.length > 0) {
+    if (!isAuthenticated || !statusIdsKey) return;
+    const timer = setTimeout(() => {
       reloadAllStatusTasks();
-    }
-  }, [isAuthenticated, statuses, activeWorkspaceId, activeProjectId, activePriority, searchQuery, reloadAllStatusTasks]);
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [isAuthenticated, statusIdsKey, activeWorkspaceId, activeProjectId, activePriority, debouncedSearchQuery, reloadAllStatusTasks]);
 
   const createTask = async (payload: CreateTaskPayload): Promise<Task> => {
     setError(null);

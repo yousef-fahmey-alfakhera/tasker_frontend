@@ -26,6 +26,16 @@ export interface Token {
   access_token: string;
 }
 
+export interface UserTypeData {
+  id: number;
+  user_id: number;
+  type: string;
+  respnsapity?: (number | string)[];
+  responsible_task_types?: TaskType[];
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface User {
   id: number;
   name: string;
@@ -33,6 +43,7 @@ export interface User {
   code?: string | null;
   project_id?: number | null;
   project?: Project | null;
+  user_type?: UserTypeData | null;
   roles?: string[];
   email_verified_at?: string | null;
   created_at?: string;

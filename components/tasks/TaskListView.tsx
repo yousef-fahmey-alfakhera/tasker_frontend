@@ -38,7 +38,7 @@ const PRIORITY_BADGES: Record<TaskPriority, { bg: string; text: string; dot: str
 
 export default function TaskListView({ onEditTask, onAddTask }: Props) {
   const { t } = useTranslation();
-  const { canCreateTask, canDeleteTask } = useAuth();
+  const { canCreateTask, canDeleteTask, user } = useAuth();
   const {
     tasks,
     statuses,
@@ -111,8 +111,11 @@ export default function TaskListView({ onEditTask, onAddTask }: Props) {
   const renderTaskRow = (task: Task) => {
     const priorityConfig =
       PRIORITY_BADGES[task.priority] || PRIORITY_BADGES.Normal;
+    const userRespIds = (user?.user_type?.respnsapity || []).map((r) => Number(r));
     const isResponsible =
-      task.respnsapity === 1 || task.responsibility === 1;
+      task.respnsapity === 1 ||
+      task.responsibility === 1 ||
+      Boolean(task.task_type_id && userRespIds.includes(task.task_type_id));
     const hasChildren =
       (task.children && task.children.length > 0) ||
       (task.subtasks_count !== undefined && task.subtasks_count > 0);
@@ -262,8 +265,11 @@ export default function TaskListView({ onEditTask, onAddTask }: Props) {
   const renderTaskMobileCard = (task: Task) => {
     const priorityConfig =
       PRIORITY_BADGES[task.priority] || PRIORITY_BADGES.Normal;
+    const userRespIds = (user?.user_type?.respnsapity || []).map((r) => Number(r));
     const isResponsible =
-      task.respnsapity === 1 || task.responsibility === 1;
+      task.respnsapity === 1 ||
+      task.responsibility === 1 ||
+      Boolean(task.task_type_id && userRespIds.includes(task.task_type_id));
     const hasChildren =
       (task.children && task.children.length > 0) ||
       (task.subtasks_count !== undefined && task.subtasks_count > 0);

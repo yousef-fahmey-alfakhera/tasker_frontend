@@ -33,7 +33,7 @@ const PRIORITY_BADGES: Record<TaskPriority, { bg: string; text: string; dot: str
 
 export default function TaskBoardView({ onEditTask, onAddTask }: Props) {
   const { t } = useTranslation();
-  const { canCreateTask } = useAuth();
+  const { canCreateTask, user } = useAuth();
   const {
     tasks,
     statuses,
@@ -96,7 +96,8 @@ export default function TaskBoardView({ onEditTask, onAddTask }: Props) {
   // Infinite scroll on scroll down inside each status column
   const handleColumnScroll = (e: React.UIEvent<HTMLDivElement>, statusId: number) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-    if (scrollHeight - scrollTop - clientHeight < 75) {
+    // Guard against firing when list doesn't have overflow or hasn't been scrolled
+    if (scrollHeight > clientHeight + 30 && scrollHeight - scrollTop - clientHeight < 75) {
       loadMoreForStatus(statusId);
     }
   };
@@ -279,8 +280,11 @@ export default function TaskBoardView({ onEditTask, onAddTask }: Props) {
                         const priorityConfig =
                           PRIORITY_BADGES[task.priority] || PRIORITY_BADGES.Normal;
 
+                        const userRespIds = (user?.user_type?.respnsapity || []).map((r) => Number(r));
                         const isResponsible =
-                          task.respnsapity === 1 || task.responsibility === 1;
+                          task.respnsapity === 1 ||
+                          task.responsibility === 1 ||
+                          Boolean(task.task_type_id && userRespIds.includes(task.task_type_id));
 
                         const hasChildren =
                           (task.children && task.children.length > 0) ||
