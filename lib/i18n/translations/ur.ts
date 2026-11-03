@@ -183,4 +183,8 @@ export const ur: Record<TranslationKey, string> = {
   show_all_statuses: 'تمام حالتیں دکھائیں',
   add: 'شامل کریں',
   add_custom_type: '+ شعبہ کے لیے حسب ضرورت قسم',
+  task_creator: 'تخلیق کنندہ',
+  creator_department: 'شعبہ / پروجیکٹ',
+  unknown_creator: 'سسٹم / نامعلوم',
+  unassigned_department: 'غیر متعین',
 };

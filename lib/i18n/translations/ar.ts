@@ -183,4 +183,8 @@ export const ar: Record<TranslationKey, string> = {
   show_all_statuses: 'عرض كل الحالات',
   add: 'إضافة',
   add_custom_type: '+ نوع مخصص للقسم',
+  task_creator: 'أنشئت بواسطة',
+  creator_department: 'القسم / المشروع',
+  unknown_creator: 'النظام / غير محدد',
+  unassigned_department: 'غير محدد',
 };

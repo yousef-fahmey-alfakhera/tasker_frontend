@@ -181,6 +181,10 @@ export const en = {
   show_all_statuses: 'Show All Statuses',
   add: 'Add',
   add_custom_type: '+ Custom Type for Department',
+  task_creator: 'Created By',
+  creator_department: 'Department / Project',
+  unknown_creator: 'System / Unknown',
+  unassigned_department: 'Unassigned',
 };
 
 export type TranslationKey = keyof typeof en;

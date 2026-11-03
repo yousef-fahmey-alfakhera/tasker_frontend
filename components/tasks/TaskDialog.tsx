@@ -20,6 +20,8 @@ import {
   UploadCloud,
   X,
   GitFork,
+  User,
+  Building2,
 } from 'lucide-react';
 
 interface Props {
@@ -137,6 +139,7 @@ export default function TaskDialog({
   const [newChildStatusId, setNewChildStatusId] = useState<number>(1);
   const [isSubmittingChild, setIsSubmittingChild] = useState(false);
 
+  const [currentTask, setCurrentTask] = useState<Task | null>(taskToEdit || null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -205,6 +208,7 @@ export default function TaskDialog({
         fetchTaskById(taskToEdit.id)
           .then((freshTask) => {
             if (!isCancelled && freshTask) {
+              setCurrentTask(freshTask);
               if (freshTask.children) {
                 setChildren(freshTask.children);
               }
@@ -223,6 +227,7 @@ export default function TaskDialog({
           });
       }
     } else {
+      setCurrentTask(null);
       setTitle('');
       setDescription('');
       const defaultStatus = isQuickCreate
@@ -486,6 +491,49 @@ export default function TaskDialog({
             {error}
           </div>
         )}
+
+        {/* Creator & Department Information Strip (shown when task card is open) */}
+        {isEditing && (currentTask || taskToEdit) && (() => {
+          const activeTask = currentTask || taskToEdit!;
+          const creatorDepartment =
+            activeTask.creator?.department ||
+            activeTask.creator?.project_name ||
+            activeTask.project?.name ||
+            projects.find((p) => p.id === activeTask.project_id)?.name ||
+            null;
+
+          return (
+            <div className="mt-3 p-3 rounded-xl bg-gradient-to-r from-indigo-950/40 via-slate-900/80 to-slate-950 border border-indigo-500/25 shadow-sm text-xs flex flex-wrap items-center justify-between gap-2.5 shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-full bg-indigo-600/20 border border-indigo-400/40 flex items-center justify-center text-indigo-300 font-bold text-xs shrink-0 shadow-inner">
+                  {(activeTask.creator?.name || 'U').charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
+                    <User className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                    <span className="text-slate-400">{t('task_creator')}:</span>
+                    <span className="font-semibold text-white truncate">
+                      {activeTask.creator?.name || t('unknown_creator')}
+                    </span>
+                  </div>
+                  {activeTask.creator?.email && (
+                    <span className="text-[10px] text-slate-500 font-mono truncate block">
+                      {activeTask.creator.email}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900/90 border border-slate-800 text-[11px]">
+                <Building2 className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                <span className="text-slate-400">{t('creator_department')}:</span>
+                <span className="font-semibold text-indigo-200">
+                  {creatorDepartment || t('unassigned_department')}
+                </span>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Lifecycle Metrics for existing task */}
         {isEditing && taskToEdit && (

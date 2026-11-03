@@ -17,6 +17,8 @@ import {
   Paperclip,
   GitFork,
   Loader2,
+  User,
+  Building2,
 } from 'lucide-react';
 
 interface Props {
@@ -416,8 +418,29 @@ export default function TaskBoardView({ onEditTask, onAddTask }: Props) {
                               </p>
                             )}
 
+                            {/* Creator & Department / Project info on card */}
+                            <div className="mt-2.5 pt-2 border-t border-slate-800/40 flex items-center justify-between gap-1 text-[11px] text-slate-400 pl-1">
+                              <span className="flex items-center gap-1.5 truncate text-slate-300">
+                                <User className="w-3 h-3 text-indigo-400 shrink-0" />
+                                <span className="truncate max-w-[110px]" title={task.creator?.name || 'System'}>
+                                  {task.creator?.name || 'System'}
+                                </span>
+                              </span>
+                              {(task.creator?.department || task.creator?.project_name || task.project?.name) && (
+                                <span
+                                  className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-indigo-300 truncate max-w-[130px]"
+                                  title={task.creator?.department || task.creator?.project_name || task.project?.name || undefined}
+                                >
+                                  <Building2 className="w-2.5 h-2.5 text-indigo-400 shrink-0" />
+                                  <span className="truncate">
+                                    {task.creator?.department || task.creator?.project_name || task.project?.name}
+                                  </span>
+                                </span>
+                              )}
+                            </div>
+
                             {/* Lifecycle Metrics */}
-                            <div className="mt-3 pt-2.5 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400 pl-1">
+                            <div className="mt-2.5 pt-2 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400 pl-1">
                               <div className="flex items-center gap-2">
                                 {task.status?.stage === 'working' && (
                                   <span className="flex items-center gap-1 text-amber-400 font-medium">

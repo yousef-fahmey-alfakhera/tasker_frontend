@@ -112,7 +112,10 @@ export interface Task {
     id: number;
     name: string;
     email: string;
-  };
+    project_id?: number | null;
+    project_name?: string | null;
+    department?: string | null;
+  } | null;
   fixed_by?: number | null;
   fixed_by_user?: {
     id: number;

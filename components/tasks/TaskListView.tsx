@@ -21,6 +21,8 @@ import {
   LayoutList,
   Loader2,
   Plus,
+  User,
+  Building2,
 } from 'lucide-react';
 import Pagination from '@/components/common/Pagination';
 
@@ -197,6 +199,17 @@ export default function TaskListView({ onEditTask, onAddTask }: Props) {
           <div className="text-[11px] text-slate-500">
             {getWorkspaceName(task.workspace_id)}
           </div>
+          <div className="flex items-center gap-1.5 text-[11px] text-slate-300 mt-1">
+            <User className="w-3 h-3 text-indigo-400 shrink-0" />
+            <span className="truncate max-w-[120px]" title={task.creator?.name || 'System'}>
+              {task.creator?.name || 'System'}
+            </span>
+            {(task.creator?.department || task.creator?.project_name) && (
+              <span className="text-[10px] text-indigo-300/80 truncate max-w-[100px]" title={task.creator?.department || task.creator?.project_name || undefined}>
+                ({task.creator?.department || task.creator?.project_name})
+              </span>
+            )}
+          </div>
         </td>
 
         {/* Due Date */}
@@ -317,6 +330,14 @@ export default function TaskListView({ onEditTask, onAddTask }: Props) {
           <span>{getProjectName(task.project_id)}</span>
           <span className="text-slate-600">•</span>
           <span>{getWorkspaceName(task.workspace_id)}</span>
+          <span className="text-slate-600">•</span>
+          <span className="flex items-center gap-1 text-slate-300">
+            <User className="w-3 h-3 text-indigo-400" />
+            <span>{task.creator?.name || 'System'}</span>
+            {(task.creator?.department || task.creator?.project_name) && (
+              <span className="text-indigo-300/80">({task.creator?.department || task.creator?.project_name})</span>
+            )}
+          </span>
           {task.due_date && (
             <>
               <span className="text-slate-600">•</span>
