@@ -54,6 +54,8 @@ export default function TaskListView({ onEditTask, onAddTask }: Props) {
     perPage,
     setPage,
     setPerPage,
+    activeStatusId,
+    setActiveStatusId,
     isOtherProject,
   } = useTasks();
 
@@ -465,6 +467,28 @@ export default function TaskListView({ onEditTask, onAddTask }: Props) {
         </div>
       )}
 
+      {/* Active Status Filter Notice & Reset Banner */}
+      {activeStatusId !== null && (
+        <div className="p-3 rounded-xl bg-slate-900/90 border border-indigo-500/40 text-xs flex items-center justify-between gap-2 shadow-sm animate-fadeIn">
+          <div className="flex items-center gap-2 min-w-0">
+            <span
+              className="w-2.5 h-2.5 rounded-full shrink-0"
+              style={{ backgroundColor: statuses.find((s) => s.id === activeStatusId)?.color || '#6366f1' }}
+            />
+            <span className="text-slate-200 truncate">
+              {t('filtered_by_status') || 'تم تحديد الحالة'}: <strong className="text-white font-bold">{statuses.find((s) => s.id === activeStatusId)?.name || `#${activeStatusId}`}</strong> (تم تقليص باقي الحالات)
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActiveStatusId(null)}
+            className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs transition-colors shrink-0 shadow-sm"
+          >
+            {t('show_all_statuses') || 'عرض كل الحالات'}
+          </button>
+        </div>
+      )}
+
       {groupMode === 'grouped' ? (
         /* Status Dropdown Accordions with Infinite Scroll */
         <div className="space-y-4">
@@ -477,7 +501,7 @@ export default function TaskListView({ onEditTask, onAddTask }: Props) {
             const hasMore = statusState?.hasMore ?? false;
             const isLoadingMore = statusState?.isLoadingMore ?? false;
             const isInitialLoading = statusState?.isLoading && statusTasks.length === 0;
-            const isCollapsed = !!collapsedStatuses[status.id];
+            const isCollapsed = activeStatusId !== null ? status.id !== activeStatusId : !!collapsedStatuses[status.id];
 
             return (
               <div
@@ -486,7 +510,13 @@ export default function TaskListView({ onEditTask, onAddTask }: Props) {
               >
                 {/* Status Dropdown Header */}
                 <div
-                  onClick={() => toggleStatusCollapse(status.id)}
+                  onClick={() => {
+                    if (activeStatusId !== null) {
+                      setActiveStatusId(status.id === activeStatusId ? null : status.id);
+                    } else {
+                      toggleStatusCollapse(status.id);
+                    }
+                  }}
                   className="px-4 py-3 bg-slate-950/60 border-b border-slate-800/80 flex items-center justify-between cursor-pointer hover:bg-slate-900/60 transition-colors select-none"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">

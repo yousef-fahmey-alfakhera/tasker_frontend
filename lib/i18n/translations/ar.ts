@@ -179,4 +179,8 @@ export const ar: Record<TranslationKey, string> = {
   primary_department: 'القسم الأساسي',
   viewing_own_tasks_in_other_project: 'عرض المهام المنشأة بواسطتك فقط في هذا القسم. يمكنك إنشاء مهام جديدة من زر "+ مهمة جديدة" بالأعلى.',
   tasks: 'مهام',
+  filtered_by_status: 'تم تحديد الحالة',
+  show_all_statuses: 'عرض كل الحالات',
+  add: 'إضافة',
+  add_custom_type: '+ نوع مخصص للقسم',
 };

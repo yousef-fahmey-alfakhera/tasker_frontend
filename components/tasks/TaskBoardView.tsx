@@ -41,6 +41,8 @@ export default function TaskBoardView({ onEditTask, onAddTask }: Props) {
     searchQuery,
     statusTasksMap,
     loadMoreForStatus,
+    activeStatusId,
+    setActiveStatusId,
     isOtherProject,
   } = useTasks();
 
@@ -85,6 +87,13 @@ export default function TaskBoardView({ onEditTask, onAddTask }: Props) {
     }
   };
 
+  // Automatically scroll into view when activeStatusId is selected
+  React.useEffect(() => {
+    if (activeStatusId !== null) {
+      scrollToColumn(activeStatusId);
+    }
+  }, [activeStatusId]);
+
   const handleQuickMove = async (task: Task, newStatusId: number) => {
     try {
       await updateTask(task.id, { status_id: newStatusId });
@@ -106,15 +115,29 @@ export default function TaskBoardView({ onEditTask, onAddTask }: Props) {
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Mobile Status Tabs for fast 1-tap switching */}
       <div className="flex sm:hidden items-center gap-1.5 px-3 pt-3 pb-1 overflow-x-auto no-scrollbar shrink-0 border-b border-slate-800/50 bg-slate-950/40">
+        <button
+          type="button"
+          onClick={() => setActiveStatusId(null)}
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all border ${
+            activeStatusId === null
+              ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
+              : 'bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800'
+          }`}
+        >
+          {t('all_statuses') || 'الكل'}
+        </button>
         {displayStatuses.map((status) => {
           const statusState = statusTasksMap[status.id];
           const count = statusState?.total ?? status.tasks_count ?? filteredTasks.filter((taskItem) => taskItem.status_id === status.id).length;
-          const isActive = activeTabStatusId === status.id;
+          const isActive = activeStatusId === status.id;
           return (
             <button
               key={status.id}
               type="button"
-              onClick={() => scrollToColumn(status.id)}
+              onClick={() => {
+                setActiveStatusId(isActive ? null : status.id);
+                scrollToColumn(status.id);
+              }}
               className={`px-3 py-1.5 rounded-xl text-xs font-medium shrink-0 flex items-center gap-1.5 transition-all border ${
                 isActive
                   ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
@@ -137,6 +160,28 @@ export default function TaskBoardView({ onEditTask, onAddTask }: Props) {
           );
         })}
       </div>
+
+      {/* Active Status Filter Notice & Reset Banner */}
+      {activeStatusId !== null && (
+        <div className="mx-3 sm:mx-6 mt-3 px-3.5 py-2 rounded-xl bg-slate-900/90 border border-indigo-500/40 text-xs flex items-center justify-between gap-2 shadow-sm animate-fadeIn">
+          <div className="flex items-center gap-2 min-w-0">
+            <span
+              className="w-2.5 h-2.5 rounded-full shrink-0"
+              style={{ backgroundColor: statuses.find((s) => s.id === activeStatusId)?.color || '#6366f1' }}
+            />
+            <span className="text-slate-200 truncate">
+              {t('filtered_by_status') || 'تم تحديد الحالة'}: <strong className="text-white font-bold">{statuses.find((s) => s.id === activeStatusId)?.name || `#${activeStatusId}`}</strong> (تم تقليص باقي الحالات)
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActiveStatusId(null)}
+            className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs transition-colors shrink-0 shadow-sm"
+          >
+            {t('show_all_statuses') || 'عرض كل الحالات'}
+          </button>
+        </div>
+      )}
 
       {/* Other Project Notice: User only sees their created tasks and creates tasks from top bar button */}
       {isOtherProject && (
@@ -166,7 +211,8 @@ export default function TaskBoardView({ onEditTask, onAddTask }: Props) {
             const hasMore = statusState?.hasMore ?? false;
             const isLoadingMore = statusState?.isLoadingMore ?? false;
             const isInitialLoading = statusState?.isLoading && columnTasks.length === 0;
-            const isCollapsed = !!collapsedColumns[status.id];
+            // When activeStatusId is selected, shrink all OTHER columns
+            const isCollapsed = activeStatusId !== null ? status.id !== activeStatusId : !!collapsedColumns[status.id];
 
             if (isCollapsed) {
               return (
@@ -176,12 +222,26 @@ export default function TaskBoardView({ onEditTask, onAddTask }: Props) {
                     columnRefs.current[status.id] = el;
                   }}
                   className="w-16 sm:w-18 shrink-0 snap-center task-board-column bg-slate-900/60 border border-slate-800/80 rounded-2xl flex flex-col items-center py-4 max-h-[calc(100dvh-170px)] sm:max-h-[calc(100vh-180px)] backdrop-blur-sm cursor-pointer hover:border-indigo-500/40 transition-all select-none"
-                  onClick={() => toggleColumnCollapse(status.id)}
+                  onClick={() => {
+                    if (activeStatusId !== null) {
+                      setActiveStatusId(status.id);
+                    } else {
+                      toggleColumnCollapse(status.id);
+                    }
+                  }}
                   title={`${status.name} (${totalCount}) - Click to expand`}
                 >
                   <div className="flex flex-col items-center gap-3 w-full">
                     <button
                       type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (activeStatusId !== null) {
+                          setActiveStatusId(status.id);
+                        } else {
+                          toggleColumnCollapse(status.id);
+                        }
+                      }}
                       className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
                       title={t('expand_status') || 'Expand'}
                     >
@@ -215,9 +275,15 @@ export default function TaskBoardView({ onEditTask, onAddTask }: Props) {
                   <div className="flex items-center gap-2 min-w-0">
                     <button
                       type="button"
-                      onClick={() => toggleColumnCollapse(status.id)}
+                      onClick={() => {
+                        if (activeStatusId !== null) {
+                          setActiveStatusId(null);
+                        } else {
+                          toggleColumnCollapse(status.id);
+                        }
+                      }}
                       className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors shrink-0"
-                      title={t('collapse_status') || 'Collapse'}
+                      title={activeStatusId !== null ? 'إلغاء تقليص باقي الحالات (عرض الكل)' : (t('collapse_status') || 'Collapse')}
                     >
                       <ChevronDown className="w-3.5 h-3.5" />
                     </button>

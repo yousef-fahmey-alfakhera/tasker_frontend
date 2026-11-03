@@ -80,6 +80,7 @@ export default function TaskDialog({
     uploadTaskAttachment,
     deleteTaskAttachment,
     fetchTaskById,
+    createTaskType,
   } = useTasks();
 
   const isEditing = !!taskToEdit;
@@ -96,6 +97,30 @@ export default function TaskDialog({
   const [projectId, setProjectId] = useState<number>(1);
   const [startDate, setStartDate] = useState('');
   const [dueDate, setDueDate] = useState('');
+
+  // Custom task type creation state for departments
+  const [isAddingCustomType, setIsAddingCustomType] = useState(false);
+  const [customTypeName, setCustomTypeName] = useState('');
+  const [isSubmittingCustomType, setIsSubmittingCustomType] = useState(false);
+
+  const handleAddCustomType = async () => {
+    if (!customTypeName.trim()) return;
+    setIsSubmittingCustomType(true);
+    try {
+      const targetProjId = projectId || activeProjectId || null;
+      const created = await createTaskType({
+        name: customTypeName.trim(),
+        project_id: targetProjId,
+      });
+      setTaskTypeId(created.id);
+      setCustomTypeName('');
+      setIsAddingCustomType(false);
+    } catch (err) {
+      console.error('Failed to create custom task type:', err);
+    } finally {
+      setIsSubmittingCustomType(false);
+    }
+  };
 
   // Attachments state
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
@@ -535,22 +560,48 @@ export default function TaskDialog({
                     <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
                     <span>{t('task_type_label')}</span>
                   </span>
-                  <span className="text-[10px] text-slate-400 font-mono">
-                    {availableTaskTypes.length > 0 ? t('types_available', { count: availableTaskTypes.length }) : t('default_type')}
-                  </span>
+                  {!isReadOnly && (
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingCustomType(!isAddingCustomType)}
+                      className="text-[10px] text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
+                    >
+                      {isAddingCustomType ? (t('cancel') || 'إلغاء') : '+ نوع مخصص للقسم'}
+                    </button>
+                  )}
                 </label>
-                <select
-                  value={taskTypeId}
-                  disabled={isReadOnly}
-                  onChange={(e) => setTaskTypeId(Number(e.target.value))}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors font-medium disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {availableTaskTypes.map((tt) => (
-                    <option key={tt.id} value={tt.id}>
-                      {tt.name} ({tt.type})
-                    </option>
-                  ))}
-                </select>
+                {isAddingCustomType ? (
+                  <div className="flex items-center gap-1.5 animate-fadeIn">
+                    <input
+                      type="text"
+                      value={customTypeName}
+                      onChange={(e) => setCustomTypeName(e.target.value)}
+                      placeholder="اسم النوع المخصص لهذا القسم..."
+                      className="flex-1 px-3 py-2 bg-slate-950 border border-indigo-500/60 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      disabled={isSubmittingCustomType || !customTypeName.trim()}
+                      onClick={handleAddCustomType}
+                      className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-colors disabled:opacity-50 shrink-0"
+                    >
+                      {isSubmittingCustomType ? '...' : (t('add') || 'إضافة')}
+                    </button>
+                  </div>
+                ) : (
+                  <select
+                    value={taskTypeId}
+                    disabled={isReadOnly}
+                    onChange={(e) => setTaskTypeId(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {availableTaskTypes.map((tt) => (
+                      <option key={tt.id} value={tt.id}>
+                        {tt.name} ({tt.type})
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               <div>
@@ -621,22 +672,48 @@ export default function TaskDialog({
                       <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
                       <span>{t('task_type_label')}</span>
                     </span>
-                    <span className="text-[10px] text-slate-400 font-mono">
-                      {availableTaskTypes.length > 0 ? t('types_available', { count: availableTaskTypes.length }) : t('default_type')}
-                    </span>
+                    {!isReadOnly && (
+                      <button
+                        type="button"
+                        onClick={() => setIsAddingCustomType(!isAddingCustomType)}
+                        className="text-[10px] text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
+                      >
+                        {isAddingCustomType ? (t('cancel') || 'إلغاء') : '+ نوع مخصص للقسم'}
+                      </button>
+                    )}
                   </label>
-                  <select
-                    value={taskTypeId}
-                    disabled={isReadOnly}
-                    onChange={(e) => setTaskTypeId(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors font-medium disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    {availableTaskTypes.map((tt) => (
-                      <option key={tt.id} value={tt.id}>
-                        {tt.name} ({tt.type})
-                      </option>
-                    ))}
-                  </select>
+                  {isAddingCustomType ? (
+                    <div className="flex items-center gap-1.5 animate-fadeIn">
+                      <input
+                        type="text"
+                        value={customTypeName}
+                        onChange={(e) => setCustomTypeName(e.target.value)}
+                        placeholder="اسم النوع المخصص لهذا القسم..."
+                        className="flex-1 px-3 py-2 bg-slate-950 border border-indigo-500/60 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        disabled={isSubmittingCustomType || !customTypeName.trim()}
+                        onClick={handleAddCustomType}
+                        className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-colors disabled:opacity-50 shrink-0"
+                      >
+                        {isSubmittingCustomType ? '...' : (t('add') || 'إضافة')}
+                      </button>
+                    </div>
+                  ) : (
+                    <select
+                      value={taskTypeId}
+                      disabled={isReadOnly}
+                      onChange={(e) => setTaskTypeId(Number(e.target.value))}
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {availableTaskTypes.map((tt) => (
+                        <option key={tt.id} value={tt.id}>
+                          {tt.name} ({tt.type})
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 <div>

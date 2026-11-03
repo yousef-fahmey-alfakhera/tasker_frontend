@@ -177,6 +177,10 @@ export const en = {
   primary_department: 'Primary Department',
   viewing_own_tasks_in_other_project: 'Showing only tasks created by you in this department. Create new tasks using the top bar button.',
   tasks: 'Tasks',
+  filtered_by_status: 'Filtered by status',
+  show_all_statuses: 'Show All Statuses',
+  add: 'Add',
+  add_custom_type: '+ Custom Type for Department',
 };
 
 export type TranslationKey = keyof typeof en;

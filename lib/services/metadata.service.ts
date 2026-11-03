@@ -19,6 +19,22 @@ export const metadataService = {
   },
 
   /**
+   * Create a new task type for a project/department
+   * POST /task-types
+   */
+  async createTaskType(payload: {
+    name: string;
+    type?: string;
+    project_id?: number | null;
+  }): Promise<ApiResponse<TaskType>> {
+    const response = await apiClient.post<ApiResponse<TaskType>>(
+      '/task-types',
+      payload
+    );
+    return response.data;
+  },
+
+  /**
    * List all workflow task statuses
    * GET /task-statuses
    */

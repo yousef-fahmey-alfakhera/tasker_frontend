@@ -57,6 +57,11 @@ interface TaskContextType {
   fetchTasks: () => Promise<void>;
   fetchTaskById: (id: number) => Promise<Task>;
   fetchTaskTypes: (projectId?: number | null) => Promise<void>;
+  createTaskType: (payload: {
+    name: string;
+    type?: string;
+    project_id?: number | null;
+  }) => Promise<TaskType>;
   createTask: (payload: CreateTaskPayload) => Promise<Task>;
   updateTask: (id: number, payload: UpdateTaskPayload) => Promise<Task>;
   deleteTask: (id: number) => Promise<void>;
@@ -482,15 +487,18 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     [statusTasksMap, fetchStatusTasks]
   );
 
-  // Reload all statuses from page 1
+  // Reload all statuses from page 1 (or only chosen active status)
   const reloadAllStatusTasks = useCallback(async () => {
     if (!isAuthenticated || statuses.length === 0) return;
+    const targetStatuses = activeStatusId
+      ? statuses.filter((st) => st.id === activeStatusId)
+      : statuses;
     await Promise.allSettled(
-      statuses.map((st) => fetchStatusTasks(st.id, 1, true))
+      targetStatuses.map((st) => fetchStatusTasks(st.id, 1, true))
     );
-  }, [isAuthenticated, statuses, fetchStatusTasks]);
+  }, [isAuthenticated, statuses, activeStatusId, fetchStatusTasks]);
 
-  // Refetch all status tasks when workspace, project, priority, searchQuery, or statuses change (debounced)
+  // Refetch all status tasks when workspace, project, priority, searchQuery, statuses, or activeStatusId change (debounced)
   const statusIdsKey = statuses.map((s) => s.id).join(',');
   useEffect(() => {
     if (!isAuthenticated || !statusIdsKey) return;
@@ -498,7 +506,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       reloadAllStatusTasks();
     }, 150);
     return () => clearTimeout(timer);
-  }, [isAuthenticated, statusIdsKey, activeWorkspaceId, activeProjectId, activePriority, debouncedSearchQuery, reloadAllStatusTasks]);
+  }, [isAuthenticated, statusIdsKey, activeWorkspaceId, activeProjectId, activeStatusId, activePriority, debouncedSearchQuery, reloadAllStatusTasks]);
 
   const createTask = async (payload: CreateTaskPayload): Promise<Task> => {
     setError(null);
@@ -724,6 +732,19 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     throw new Error(res.message || 'Failed to create workspace');
   };
 
+  const createTaskType = async (payload: {
+    name: string;
+    type?: string;
+    project_id?: number | null;
+  }): Promise<TaskType> => {
+    const res = await metadataService.createTaskType(payload);
+    if (res.success && res.data) {
+      setTaskTypes((prev) => [...prev, res.data]);
+      return res.data;
+    }
+    throw new Error(res.message || 'Failed to create task type');
+  };
+
   const refreshAll = async () => {
     await fetchMetadata();
     await fetchTasks();
@@ -759,6 +780,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         fetchTasks,
         fetchTaskById,
         fetchTaskTypes,
+        createTaskType,
         createTask,
         updateTask,
         deleteTask,

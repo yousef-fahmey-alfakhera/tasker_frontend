@@ -179,4 +179,8 @@ export const ur: Record<TranslationKey, string> = {
   primary_department: 'بنیادی شعبہ',
   viewing_own_tasks_in_other_project: 'اس شعبے میں صرف آپ کے بنائے ہوئے ٹاسکس دکھائے جا رہے ہیں۔ اوپر والے بٹن سے نیا ٹاسک بنائیں۔',
   tasks: 'ٹاسکس',
+  filtered_by_status: 'حالت کے لحاظ سے فلٹر کیا گیا',
+  show_all_statuses: 'تمام حالتیں دکھائیں',
+  add: 'شامل کریں',
+  add_custom_type: '+ شعبہ کے لیے حسب ضرورت قسم',
 };
